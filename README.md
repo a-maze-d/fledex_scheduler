@@ -187,7 +187,8 @@ defmodule ExampleTest do
     # Let SchedEx run through a day's worth of scheduling time
     Process.sleep(1000)
 
-    expected_time = Timex.now() |> Timex.beginning_of_day() |> Timex.shift(hours: 34)
+    expected_time = %{DateTime.utc_now() | hour: 0, minute: 0, second: 0, microsecond: {0, 0}}
+      |> DateTime.shift(hour: 34)
     assert DateTime.diff(AgentHelper.get(agent), expected_time) == 0
   end
 end

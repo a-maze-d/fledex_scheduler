@@ -94,6 +94,11 @@ defmodule SchedEx do
     end
   end
 
+  def run_job(job, opts \\ []) do
+    opts = Keyword.put_new(opts, :repeat, true)
+    SchedEx.Runner.run(job, opts)
+  end
+
   @doc """
   Cancels the given scheduled job
   """

@@ -27,3 +27,9 @@ sched_ex-*.tar
 
 # Ignore dialyzer caches.
 /priv/plts/
+
+# tool versions
+.tool-versions
+
+# ignore the expert files (expert is the new Elixr LS)
+/.expert/

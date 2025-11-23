@@ -6,7 +6,7 @@ defmodule SchedEx.IdentityTimeScale do
 
   @impl true
   def now(timezone) do
-    Timex.now(timezone)
+    DateTime.now(timezone) |> elem(1)
   end
 
   @impl true

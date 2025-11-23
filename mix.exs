@@ -8,7 +8,7 @@ defmodule SchedEx.Mixfile do
     [
       app: :sched_ex,
       version: @version,
-      elixir: "~> 1.9",
+      elixir: "~> 1.19",
       start_permanent: Mix.env() == :prod,
       package: package(),
       deps: deps(),
@@ -20,18 +20,18 @@ defmodule SchedEx.Mixfile do
 
   def application do
     [
-      extra_applications: [:crontab, :logger, :timex]
+      extra_applications: [:crontab, :logger, :tzdata]
     ]
   end
 
   defp deps do
     [
       {:crontab, "~> 1.1.2"},
-      {:timex, "~> 3.1"},
       {:ex_doc, ">= 0.0.0", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false},
       {:credo, "~> 1.0", only: [:dev, :test], runtime: false},
-      {:mix_test_watch, "~> 1.0", only: :dev, runtime: false}
+      {:mix_test_watch, "~> 1.0", only: :dev, runtime: false},
+      {:tzdata, "~> 1.1"}
     ]
   end
 
