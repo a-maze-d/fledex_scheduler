@@ -5,17 +5,21 @@ defmodule SchedEx.Runner do
 
   @doc """
   Main point of entry into this module. Starts and returns a process which will
-  run the given function per the specified delay definition (can be an integer
-  unit as derived from a TimeScale, or a CronExpression)
+  run the given function per the specified `job` definition
   """
-  def run(func, spec, opts) when is_function(func) do
-    GenServer.start_link(__MODULE__, {func, spec, opts}, Keyword.take(opts, [:name]))
+  def run(%Job{name: name} = job, opts) do
+    GenServer.start_link(__MODULE__, {job, opts}, [name: name])
   end
-  @doc """
-  Similar to `run/3` but with a job encapsulating most things instead of a `func` and a `spec`
-  """
-  def run(%Job{} = spec, opts) do
-    GenServer.start_link(__MODULE__, {spec, opts}, Keyword.take(opts, [:name]))
+
+  def update(%Job{name: name} = job, opts) do
+    GenServer.call(name, {:update, job, opts})
+  end
+
+  def next_schedule(%Job{name: name} = _job) do
+    GenServer.call(name, :next_schedule)
+  end
+  def next_schedule(name) do
+    GenServer.call(name, :next_schedule)
   end
 
   @doc """
@@ -25,8 +29,8 @@ defmodule SchedEx.Runner do
     GenServer.call(pid, :stats)
   end
 
-  def stats(_token) do
-    {:error, "Not a statable token"}
+  def stats(_pid) do
+    {:error, "Not a statable pid"}
   end
 
   @doc """
@@ -37,67 +41,139 @@ defmodule SchedEx.Runner do
     :ok
   end
 
-  def cancel(_token) do
-    {:error, "Not a cancellable token"}
+  def cancel(_pid) do
+    {:error, "Not a cancellable pid"}
   end
 
-  # Server API
-  def init({func, spec, opts}) do
+  # MARK: Server API
+  def init({%Job{schedule: _schedule, func: _func, context: _context} = job, opts}) do
     Process.flag(:trap_exit, true)
+
     start_time = Keyword.get(opts, :start_time, DateTime.utc_now())
 
-    case schedule_next(start_time, spec, opts) do
-      {%DateTime{} = next_time, quantized_next_time, timer_ref} ->
+    {
+      :ok,
+      %{
+        job: nil,
+        timer_ref: nil,
+        quantized_scheduled_at: nil,
+        scheduled_at: nil,
+        delay: nil,
+        stats: %SchedEx.Stats{},
+        opts: nil
+      },
+      {:continue, {start_time, job, opts}}
+    }
+  end
+
+  def to_job(func, spec, job_opts) do
+    spec =
+      case spec do
+        milliseconds when is_integer(milliseconds) -> {milliseconds, :ms}
+        {_value, _unit} = delay -> delay
+        %Crontab.CronExpression{} = crontab -> crontab
+      end
+
+    %Job{
+      name: Keyword.get(job_opts, :name, :default_name),
+      func: func,
+      schedule: spec,
+      opts: [
+        timezone: Keyword.get(job_opts, :timezone, "Etc/UTC"),
+        overlap: Keyword.get(job_opts, :overlap, false),
+        run_once: Keyword.get(job_opts, :run_once, false),
+        repeat: Keyword.get(job_opts, :repeat, false)
+      ],
+      context: Keyword.get(job_opts, :context, %{})
+    }
+  end
+
+  def handle_continue({start_time, job, opts}, state) do
+    # IO.puts("handle_continue...")
+    case schedule_next(start_time, job, opts) do
+      {%DateTime{} = next_time, quantized_next_time, next_delay, timer_ref} ->
         stats = %SchedEx.Stats{}
 
-        {:ok,
+        {:noreply,
          %{
-           func: func,
-           spec: spec,
-           scheduled_at: next_time,
-           quantized_scheduled_at: quantized_next_time,
+           job: job,
            timer_ref: timer_ref,
+           quantized_scheduled_at: quantized_next_time,
+           scheduled_at: next_time,
+           delay: next_delay,
            stats: stats,
            opts: opts
          }}
 
       {:error, _} ->
-        :ignore
+        # IO.puts("stopping...")
+        # adjusting to do the same as the normal operation (see handle_info)
+        # add the job and opts to the state to support debugging.
+        {:stop, :normal, %{state | job: job, opts: opts}}
+        # :ignore
     end
   end
-  def init({%Job{schedule: _schedule, func: _func, context: _context} = spec, opts}) do
-    Process.flag(:trap_exit, true)
 
-    start_time = Keyword.get(opts, :start_time, DateTime.utc_now())
-
-    case schedule_next(start_time, spec, opts) do
-      {%DateTime{} = next_time, quantized_next_time, timer_ref} ->
-        stats = %SchedEx.Stats{}
-
-        {:ok,
-         %{
-           spec: spec,
-           timer_ref: timer_ref,
-           quantized_scheduled_at: quantized_next_time,
-           scheduled_at: next_time,
-           stats: stats,
-           opts: opts
-         }}
-
-      {:error, _} ->
-        :ignore
-    end
-
+  def handle_call(
+        :next_schedule,
+        _from,
+        %{
+          scheduled_at: scheduled_at,
+          quantized_scheduled_at: quantized_next_time,
+          delay: delay
+        } = state
+      ) do
+    {:reply, {scheduled_at, quantized_next_time, delay}, state}
   end
 
   def handle_call(:stats, _from, %{stats: stats} = state) do
     {:reply, stats, state}
   end
 
+  def handle_call(
+        {:update, %Job{} = job, opts},
+        _from,
+        %{
+          timer_ref: timer_ref,
+          stats: stats
+        } = _state
+      ) do
+    _ignore = Process.cancel_timer(timer_ref)
+    start_time = Keyword.get(opts, :start_time, DateTime.utc_now())
+
+    # IO.puts("handle_call...")
+    new_state = case schedule_next(start_time, job, opts) do
+      {%DateTime{} = next_time, quantized_next_time, next_delay, timer_ref} ->
+        %{
+          job: job,
+          timer_ref: timer_ref,
+          quantized_scheduled_at: quantized_next_time,
+          scheduled_at: next_time,
+          delay: next_delay,
+          stats: stats,
+          opts: opts
+        }
+
+      {:error, _} ->
+        :shutdown = send(self(), :shutdown)
+        %{
+          job: job,
+          timer_ref: nil,
+          quantized_scheduled_at: nil,
+          scheduled_at: nil,
+          delay: nil,
+          stats: stats,
+          opts: opts
+        }
+    end
+    {:reply, :ok, new_state}
+
+  end
+
   def handle_info(
         :run,
         %{
-          spec: spec,
+          job: job,
           scheduled_at: this_time,
           quantized_scheduled_at: quantized_this_time,
           stats: stats,
@@ -111,19 +187,23 @@ defmodule SchedEx.Runner do
     end_time = DateTime.utc_now()
     stats = SchedEx.Stats.update(stats, this_time, quantized_this_time, start_time, end_time)
 
-    if Keyword.get(opts, :repeat, false) do
-      case schedule_next(this_time, spec, opts) do
-        {%DateTime{} = next_time, quantized_next_time, timer_ref} ->
+    if Keyword.get(job.opts, :repeat, false) do
+      # IO.puts("handle_info...")
+      case schedule_next(this_time, job, opts) do
+        {%DateTime{} = next_time, quantized_next_time, next_delay, timer_ref} ->
           {:noreply,
            %{
              state
              | scheduled_at: next_time,
                quantized_scheduled_at: quantized_next_time,
+               delay: next_delay,
                timer_ref: timer_ref,
                stats: stats
            }}
 
         _ ->
+          # IO.puts("stopping...")
+          # Why is this considered as a normal stop? Isn't this an error?
           {:stop, :normal, %{state | stats: stats}}
       end
     else
@@ -139,14 +219,7 @@ defmodule SchedEx.Runner do
     {:noreply, state}
   end
 
-  defp run_func(this_time, %{func: func} = _state) do
-    if is_function(func, 1) do
-      func.(this_time)
-    else
-      func.()
-    end
-  end
-  defp run_func(this_time, %{spec: %Job{func: func}} = _state) do
+  defp run_func(this_time, %{job: %Job{func: func}} = _state) do
     if is_function(func, 1) do
       func.(this_time)
     else
@@ -154,24 +227,28 @@ defmodule SchedEx.Runner do
     end
   end
 
-  defp schedule_next(%DateTime{} = from, spec, opts) do
-    # IO.puts("schedule_next: #{inspect {from, spec, opts}}")
-    case get_next_and_delay(from, spec, opts) do
+  defp schedule_next(%DateTime{} = from, job, opts) do
+    case get_next_and_delay(from, job, opts) do
       {:error, _} = error ->
         error
+
       {next_time, next_delay} ->
+        # IO.puts("scheduling next: #{inspect {next_time, next_delay}}")
         timer_ref = Process.send_after(self(), :run, next_delay)
-        {next_time, DateTime.shift(DateTime.utc_now(), microsecond: {next_delay * 1000, 6}), timer_ref}
-      end
+
+        {
+          next_time,
+          DateTime.shift(DateTime.utc_now(), microsecond: {next_delay * 1000, 6}),
+          next_delay,
+          timer_ref
+        }
+    end
   end
 
-  defp get_next_and_delay(from, %Job{schedule: schedule} = _spec, opts) when is_struct(schedule, Crontab.CronExpression) do
-    get_next_and_delay(from, schedule, opts)
-  end
-  defp get_next_and_delay(from, spec, opts) when is_integer(spec) or is_struct(spec, Job) do
+  defp get_next_and_delay(from, %Job{schedule: {value, unit}} = _job, opts) do
     time_scale = Keyword.get(opts, :time_scale, SchedEx.IdentityTimeScale)
 
-    delay = get_delay(spec)
+    delay = to_millis(value, unit)
     delay = round(delay / time_scale.speedup())
 
     next = DateTime.shift(from, microsecond: {delay * 1000, 6})
@@ -179,20 +256,24 @@ defmodule SchedEx.Runner do
 
     {next, new_delay}
   end
+
   defp get_next_and_delay(
          %DateTime{} = _from,
-         %Crontab.CronExpression{} = crontab,
+         %Job{
+           schedule: crontab,
+           opts: job_opts
+         } = job,
          opts
        ) do
     time_scale = Keyword.get(opts, :time_scale, SchedEx.IdentityTimeScale)
-    timezone = Keyword.get(opts, :timezone, "Etc/UTC")
+    timezone = Keyword.get(job_opts, :timezone, "Etc/UTC")
     from = time_scale.now(timezone)
 
     naive_from = from |> DateTime.to_naive()
 
     case Crontab.Scheduler.get_next_run_date(crontab, naive_from) do
       {:ok, naive_next} ->
-        next = convert_naive_to_timezone(naive_next, crontab, timezone, opts)
+        next = convert_naive_to_timezone(naive_next, job, timezone, opts)
         delay = max(DateTime.diff(next, from, :millisecond), 0)
         delay = round(delay / time_scale.speedup())
         {next, delay}
@@ -202,11 +283,6 @@ defmodule SchedEx.Runner do
     end
   end
 
-  defp get_delay(spec) when is_integer(spec), do: spec
-  defp get_delay(%Job{schedule: {value, unit}} = _spec) do
-    to_millis(value, unit)
-  end
-
   defp to_millis(value, :milliseconds), do: value
   defp to_millis(value, :ms), do: value
 
@@ -214,7 +290,7 @@ defmodule SchedEx.Runner do
   defp to_millis(value, :sec), do: to_millis(value, :s)
   defp to_millis(value, :s), do: to_millis(value, :ms) * 1000
 
-  defp to_millis(value, :mminutes), do: to_millis(value, :m)
+  defp to_millis(value, :minutes), do: to_millis(value, :m)
   defp to_millis(value, :min), do: to_millis(value, :m)
   defp to_millis(value, :m), do: to_millis(value, :s) * 60
 
@@ -224,18 +300,19 @@ defmodule SchedEx.Runner do
   defp to_millis(value, :days), do: to_millis(value, :d)
   defp to_millis(value, :d), do: to_millis(value, :h) * 24
 
-  defp to_millis(value, :weeks), do: to_millis(value, :d)
+  defp to_millis(value, :weeks), do: to_millis(value, :w)
   defp to_millis(value, :w), do: to_millis(value, :d) * 7
 
-  defp convert_naive_to_timezone(naive_next, crontab, timezone, opts) do
+  defp convert_naive_to_timezone(naive_next, job, timezone, opts) do
     next = DateTime.from_naive(naive_next, timezone)
+
     case next do
       {:gap, _just_before, just_after} ->
         opts
         |> Keyword.get(:nonexistent_time_strategy, :skip)
         |> case do
           :skip ->
-            get_next_and_delay(just_after, crontab, opts)
+            get_next_and_delay(just_after, job, opts)
             |> elem(0)
 
           :adjust ->
@@ -259,9 +336,7 @@ defmodule SchedEx.Runner do
     difference_from_midnight = NaiveDateTime.diff(naive_date, naive_start_of_day)
 
     naive_start_of_day
-      |> DateTime.from_naive!(timezone)
-      |> DateTime.shift(second: difference_from_midnight)
-
-
+    |> DateTime.from_naive!(timezone)
+    |> DateTime.shift(second: difference_from_midnight)
   end
 end

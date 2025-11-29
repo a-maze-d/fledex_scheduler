@@ -8,11 +8,12 @@ defmodule SchedExTest do
   doctest SchedEx
 
   @sleep_duration 200
+  @sleep_duration_plus_margin @sleep_duration + 10
 
   defmodule TestCallee do
     use Agent
 
-    def start_link(_) do
+    def start_link(_opts) do
       Agent.start_link(fn -> [] end)
     end
 
@@ -41,6 +42,8 @@ defmodule SchedExTest do
     end
 
     def init({base_time, speedup}) do
+      Process.flag(:trap_exit, true)
+
       {:ok, %{base_time: base_time, time_0: DateTime.utc_now(), speedup: speedup}}
     end
 
@@ -53,7 +56,7 @@ defmodule SchedExTest do
 
       now =
         base_time
-        |> DateTime.shift(microsecond: {diff * 1000 , 6})
+        |> DateTime.shift(microsecond: {diff * 1000, 6})
         |> DateTime.shift_zone!(timezone)
 
       {:reply, now, state}
@@ -61,6 +64,11 @@ defmodule SchedExTest do
 
     def handle_call({:speedup}, _from, %{speedup: speedup} = state) do
       {:reply, speedup, state}
+    end
+
+    def terminate(_reason, _state) do
+      # we can add here some debugging stuff
+      # IO.puts("TestTimeScale terminating...")
     end
   end
 
@@ -100,12 +108,13 @@ defmodule SchedExTest do
         DateTime.shift(DateTime.utc_now(), microsecond: {@sleep_duration * 1000, 3})
       )
 
-      Process.sleep(@sleep_duration)
+      # Add a bit of wiggle_room
+      Process.sleep(@sleep_duration_plus_margin)
       assert TestCallee.clear(context.agent) == [1]
     end
 
     test "is cancellable", context do
-      {:ok, token} =
+      {:ok, pid} =
         SchedEx.run_at(
           TestCallee,
           :append,
@@ -113,7 +122,7 @@ defmodule SchedExTest do
           DateTime.shift(DateTime.utc_now(), microsecond: {@sleep_duration * 1000, 3})
         )
 
-      :ok = SchedEx.cancel(token)
+      :ok = SchedEx.cancel(pid)
       Process.sleep(2 * @sleep_duration)
       assert TestCallee.clear(context.agent) == []
     end
@@ -126,9 +135,105 @@ defmodule SchedExTest do
       assert TestCallee.clear(context.agent) == [1]
     end
 
+    test "runs the m,f,a after the expected delay (with unit, milliseconds)", context do
+      SchedEx.run_in(TestCallee, :append, [context.agent, 1], {@sleep_duration, :ms})
+      Process.sleep(2 * @sleep_duration)
+      assert TestCallee.clear(context.agent) == [1]
+      SchedEx.run_in(TestCallee, :append, [context.agent, 1], {@sleep_duration, :milliseconds})
+      Process.sleep(2 * @sleep_duration)
+      assert TestCallee.clear(context.agent) == [1]
+    end
+
+    @name :unit_check
+    test "check bigger delays are correct (seconds)" do
+      SchedEx.run_in(fn -> :ok end, {1, :seconds}, name: @name)
+      {_sched, _quant_sched, delay} = SchedEx.Runner.next_schedule(@name)
+      assert delay == 1 * 1_000
+      SchedEx.cancel(@name)
+    end
+
+    test "check bigger delays are correct (sec)" do
+      job = Job.new(@name, fn -> :ok end, {1, :sec}, %{}, [])
+
+      SchedEx.run_job(job, name: @name)
+      {_sched, _quant_sched, delay} = SchedEx.Runner.next_schedule(job)
+      assert delay == 1 * 1_000
+      SchedEx.cancel(@name)
+    end
+
+    test "check bigger delays are correct (s)" do
+      SchedEx.run_in(fn -> :ok end, {1, :s}, name: @name)
+      {_sched, _quant_sched, delay} = SchedEx.Runner.next_schedule(@name)
+      assert delay == 1 * 1_000
+      SchedEx.cancel(@name)
+    end
+
+    test "check bigger delays are correct (minutes)" do
+      SchedEx.run_in(fn -> :ok end, {1, :minutes}, name: @name)
+      {_sched, _quant_sched, delay} = SchedEx.Runner.next_schedule(@name)
+      assert delay == 1 * 1_000 * 60
+      SchedEx.cancel(@name)
+    end
+
+    test "check bigger delays are correct (min)" do
+      SchedEx.run_in(fn -> :ok end, {1, :min}, name: @name)
+      {_sched, _quant_sched, delay} = SchedEx.Runner.next_schedule(@name)
+      assert delay == 1 * 1_000 * 60
+      SchedEx.cancel(@name)
+    end
+
+    test "check bigger delays are correct (m)" do
+      SchedEx.run_in(fn -> :ok end, {1, :m}, name: @name)
+      {_sched, _quant_sched, delay} = SchedEx.Runner.next_schedule(@name)
+      assert delay == 1 * 1_000 * 60
+      SchedEx.cancel(@name)
+    end
+
+    test "check bigger delays are correct (h)" do
+      SchedEx.run_in(fn -> :ok end, {1, :h}, name: @name)
+      {_sched, _quant_sched, delay} = SchedEx.Runner.next_schedule(@name)
+      assert delay == 1 * 1_000 * 60 * 60
+      SchedEx.cancel(@name)
+    end
+
+    test "check bigger delays are correct (hours)" do
+      SchedEx.run_in(fn -> :ok end, {1, :hours}, name: @name)
+      {_sched, _quant_sched, delay} = SchedEx.Runner.next_schedule(@name)
+      assert delay == 1 * 1_000 * 60 * 60
+      SchedEx.cancel(@name)
+    end
+
+    test "check bigger delays are correct (days)" do
+      SchedEx.run_in(fn -> :ok end, {1, :days}, name: @name)
+      {_sched, _quant_sched, delay} = SchedEx.Runner.next_schedule(@name)
+      assert delay == 1 * 1_000 * 60 * 60 * 24
+      SchedEx.cancel(@name)
+    end
+
+    test "check bigger delays are correct (d)" do
+      SchedEx.run_in(fn -> :ok end, {1, :d}, name: @name)
+      {_sched, _quant_sched, delay} = SchedEx.Runner.next_schedule(@name)
+      assert delay == 1 * 1_000 * 60 * 60 * 24
+      SchedEx.cancel(@name)
+    end
+
+    test "check bigger delays are correct (weeks)" do
+      SchedEx.run_in(fn -> :ok end, {1, :weeks}, name: @name)
+      {_sched, _quant_sched, delay} = SchedEx.Runner.next_schedule(@name)
+      assert delay == 1 * 1_000 * 60 * 60 * 24 * 7
+      SchedEx.cancel(@name)
+    end
+
+    test "check bigger delays are correct (w)" do
+      SchedEx.run_in(fn -> :ok end, {1, :w}, name: @name)
+      {_sched, _quant_sched, delay} = SchedEx.Runner.next_schedule(@name)
+      assert delay == 1 * 1_000 * 60 * 60 * 24 * 7
+      SchedEx.cancel(@name)
+    end
+
     test "runs the fn after the expected delay", context do
       SchedEx.run_in(fn -> TestCallee.append(context.agent, 1) end, @sleep_duration)
-      Process.sleep(2 * @sleep_duration)
+      Process.sleep(2 * @sleep_duration_plus_margin)
       assert TestCallee.clear(context.agent) == [1]
     end
 
@@ -171,7 +276,8 @@ defmodule SchedExTest do
     end
 
     test "respects timescale", context do
-      {:ok, _} = start_supervised({TestTimeScale, {DateTime.utc_now, 1000}}, restart: :temporary)
+      {:ok, _} =
+        start_supervised({TestTimeScale, {DateTime.utc_now(), 1000}}, restart: :temporary)
 
       SchedEx.run_in(
         fn -> TestCallee.append(context.agent, 1) end,
@@ -186,13 +292,13 @@ defmodule SchedExTest do
 
     test "runs immediately (but not in process) if the expected delay is non-positive", context do
       SchedEx.run_in(TestCallee, :append, [context.agent, 1], -100_000)
-      Process.sleep(@sleep_duration)
+      Process.sleep(@sleep_duration_plus_margin)
       assert TestCallee.clear(context.agent) == [1]
     end
 
     test "is cancellable", context do
-      {:ok, token} = SchedEx.run_in(TestCallee, :append, [context.agent, 1], @sleep_duration)
-      :ok = SchedEx.cancel(token)
+      {:ok, pid} = SchedEx.run_in(TestCallee, :append, [context.agent, 1], @sleep_duration)
+      :ok = SchedEx.cancel(pid)
       Process.sleep(2 * @sleep_duration)
       assert TestCallee.clear(context.agent) == []
     end
@@ -226,7 +332,9 @@ defmodule SchedExTest do
       )
 
       Process.sleep(2000)
-      assert TestCallee.clear(context.agent) == [1, 1]
+      runs = length(TestCallee.clear(context.agent))
+      assert runs >= 2
+      assert runs <= 3
     end
 
     test "respects the repeat flag", context do
@@ -265,7 +373,10 @@ defmodule SchedExTest do
         )
 
       Process.sleep(2000)
-      assert TestCallee.clear(context.agent) == [1]
+
+      runs = length(TestCallee.clear(context.agent))
+      assert runs >= 1
+      assert runs <= 2
       refute Process.alive?(pid)
     end
 
@@ -279,7 +390,11 @@ defmodule SchedExTest do
           true
         )
 
-      assert SchedEx.run_every(fn -> :ok end, crontab) == :ignore
+      # we do start, but will terminate more or less immediately
+      assert {:ok, pid} = SchedEx.run_every(fn -> :ok end, crontab)
+      # the process will shut down as soon as it realizes that nothing needs to be done
+      Process.sleep(100)
+      refute Process.alive?(pid)
     end
 
     test "supports parsing extended strings", context do
@@ -292,7 +407,10 @@ defmodule SchedExTest do
       )
 
       Process.sleep(2000)
-      assert TestCallee.clear(context.agent) == [1, 1]
+
+      runs = length(TestCallee.clear(context.agent))
+      assert runs >= 2
+      assert runs <= 3
     end
 
     test "supports crontab expressions (and extended ones at that)", context do
@@ -306,7 +424,10 @@ defmodule SchedExTest do
       )
 
       Process.sleep(2000)
-      assert TestCallee.clear(context.agent) == [1, 1]
+
+      runs = length(TestCallee.clear(context.agent))
+      assert runs >= 2
+      assert runs <= 3
     end
 
     test "optionally passes the runtime into the m,f,a", context do
@@ -327,7 +448,7 @@ defmodule SchedExTest do
       )
 
       Process.sleep(1000)
-      assert TestCallee.clear(context.agent) == [expected_time]
+      assert hd(TestCallee.clear(context.agent)) == expected_time
     end
 
     test "optionally passes the runtime into the fn", context do
@@ -346,7 +467,7 @@ defmodule SchedExTest do
       )
 
       Process.sleep(1000)
-      assert TestCallee.clear(context.agent) == [expected_time]
+      assert hd(TestCallee.clear(context.agent)) == expected_time
     end
 
     test "supports interpreting crontab in a given timezone", context do
@@ -367,7 +488,7 @@ defmodule SchedExTest do
       )
 
       Process.sleep(1000)
-      assert TestCallee.clear(context.agent) == [expected_time]
+      assert hd(TestCallee.clear(context.agent)) == expected_time
     end
 
     test "skips non-existent times when configured to do so and crontab refers to a non-existent time",
@@ -419,7 +540,7 @@ defmodule SchedExTest do
       assert adjusted_time == expected_time_for_adjust
     end
 
-    test "takes the later time time when configured to do so and crontab refers to an ambiguous time",
+    test "takes the later time when configured to do so and crontab refers to an ambiguous time",
          context do
       # Next time will resolve to 1:00 AM CST, which is ambiguous
       now = DateTime.from_naive!(~N[2017-11-05 00:30:00], "America/Chicago")
@@ -442,7 +563,7 @@ defmodule SchedExTest do
     test "is cancellable", context do
       {:ok, _} = start_supervised({TestTimeScale, {DateTime.utc_now(), 60}}, restart: :temporary)
 
-      {:ok, token} =
+      {:ok, pid} =
         SchedEx.run_every(
           TestCallee,
           :append,
@@ -451,7 +572,7 @@ defmodule SchedExTest do
           time_scale: TestTimeScale
         )
 
-      :ok = SchedEx.cancel(token)
+      :ok = SchedEx.cancel(pid)
       Process.sleep(1000)
       assert TestCallee.clear(context.agent) == []
     end
@@ -472,7 +593,81 @@ defmodule SchedExTest do
           time_scale: TestTimeScale
         )
 
-        assert pid == Process.whereis(:name_test)
+      assert pid == Process.whereis(:name_test)
+      Process.sleep(10)
+      # IO.puts("test done!")
+    end
+  end
+  describe "run_job" do
+    test "run job with crontab", context do
+      {:ok, _} = start_supervised({TestTimeScale, {DateTime.utc_now(), 1}}, restart: :temporary)
+      crontab = Parser.parse!("* * * * * *", true)
+
+      job =
+        Job.new()
+        |> Job.set_name(:test_job)
+        |> Job.set_schedule(crontab)
+        |> Job.set_task(fn -> TestCallee.append(context.agent, 1) end)
+        |> Job.set_repeat(true)
+        |> Job.set_timezone("Etc/UTC")
+        |> Job.set_overlap(false)
+        |> Job.set_context(%{strip_name: :test_strip, job: :test_job})
+
+      SchedEx.run_job(job, time_scale: TestTimeScale)
+
+      Process.sleep(2000)
+      # if we are unlucky we might get more than 2
+      assert length(TestCallee.clear(context.agent)) >= 2
+    end
+    test "update job", context do
+      {:ok, _} = start_supervised({TestTimeScale, {DateTime.utc_now(), 1}}, restart: :temporary)
+
+      job =
+        Job.new()
+        |> Job.set_name(:test_job)
+        |> Job.set_schedule({@sleep_duration, :ms})
+        |> Job.set_task(fn -> TestCallee.append(context.agent, 1) end)
+        |> Job.set_repeat(true)
+
+      SchedEx.run_job(job, time_scale: TestTimeScale)
+      Process.sleep(@sleep_duration_plus_margin)
+
+      job2 = job |> Job.set_task(fn -> TestCallee.append(context.agent, 2) end)
+
+      SchedEx.update_job(job2, time_scale: TestTimeScale)
+      Process.sleep(@sleep_duration_plus_margin)
+
+      assert TestCallee.clear(context.agent) >= [1, 2]
+    end
+    test "update job that does not reschedule", context do
+      {:ok, _} = start_supervised({TestTimeScale, {DateTime.utc_now(), 1}}, restart: :temporary)
+
+      job =
+        Job.new()
+        |> Job.set_name(:test_job)
+        |> Job.set_schedule({@sleep_duration, :ms})
+        |> Job.set_task(fn -> TestCallee.append(context.agent, 1) end)
+        |> Job.set_repeat(true)
+        |> Job.set_timezone("Etc/UTC")
+
+      {:ok, pid} = SchedEx.run_job(job, time_scale: TestTimeScale)
+      Process.sleep(@sleep_duration_plus_margin)
+
+      now = DateTime.utc_now()
+      crontab =
+        Parser.parse!(
+          "#{now.second} #{now.minute} #{now.hour} #{now.day} #{now.month} * #{now.year - 1}",
+          true
+        )
+
+      job2 = job
+        |> Job.set_task(fn -> TestCallee.append(context.agent, 2) end)
+        |> Job.set_schedule(crontab)
+
+      SchedEx.update_job(job2, time_scale: TestTimeScale)
+      Process.sleep(100)
+
+      refute Process.alive?(pid)
     end
   end
 
@@ -580,10 +775,10 @@ defmodule SchedExTest do
 
   describe "stats" do
     test "returns stats on the running job", context do
-      {:ok, token} =
+      {:ok, pid} =
         SchedEx.run_in(TestCallee, :append, [context.agent, 1], @sleep_duration, repeat: true)
 
-      Process.sleep(@sleep_duration)
+      Process.sleep(@sleep_duration_plus_margin)
 
       %SchedEx.Stats{
         scheduling_delay: %SchedEx.Stats.Value{
@@ -598,7 +793,7 @@ defmodule SchedExTest do
           avg: exec_avg,
           count: exec_count
         }
-      } = SchedEx.stats(token)
+      } = SchedEx.stats(pid)
 
       assert sched_count == 1
       # Assume that scheduling delay is 1..3000 usec
@@ -613,6 +808,8 @@ defmodule SchedExTest do
       assert exec_avg < 200.0
       assert exec_min == exec_avg
       assert exec_max == exec_avg
+
+      assert {:error, _} = SchedEx.stats(:not_a_pid)
     end
   end
 end

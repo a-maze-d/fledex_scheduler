@@ -14,7 +14,10 @@ defmodule SchedEx.Mixfile do
       deps: deps(),
       docs: docs(),
       dialyzer: dialyzer(),
-      name: "SchedEx"
+      name: "SchedEx",
+      test_coverage: [
+        tool: ExCoveralls
+      ]
     ]
   end
 
@@ -31,7 +34,23 @@ defmodule SchedEx.Mixfile do
       {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false},
       {:credo, "~> 1.0", only: [:dev, :test], runtime: false},
       {:mix_test_watch, "~> 1.0", only: :dev, runtime: false},
-      {:tzdata, "~> 1.1"}
+      {:tzdata, "~> 1.1", optional: true},
+      {:excoveralls, "~> 0.18", only: :test},
+      {:castore, "~> 1.0", only: :test}
+    ]
+  end
+
+  def cli do
+    [
+      preferred_envs: [
+        coveralls: :test,
+        "coveralls.github": :test,
+        "coveralls.detail": :test,
+        "coveralls.post": :test,
+        "coveralls.html": :test,
+        "coveralls.cobertura": :test,
+        "coveralls.multiple": :test
+      ]
     ]
   end
 

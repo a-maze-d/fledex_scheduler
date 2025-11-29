@@ -10,6 +10,7 @@ defmodule SchedEx do
   """
   def run_at(m, f, a, %DateTime{} = time, opts \\ [])
       when is_atom(m) and is_atom(f) and is_list(a) do
+    # TODO: Why do we handle {m, f, a}s differently for run_at and run_in?
     run_at(fn -> apply(m, f, a) end, time, opts)
   end
 
@@ -48,8 +49,23 @@ defmodule SchedEx do
 
   Takes the same options as `run_in/5`
   """
-  def run_in(func, delay, opts \\ []) when is_function(func) and is_integer(delay) do
-    SchedEx.Runner.run(func, delay, opts)
+  def run_in(func, delay, opts \\ [])
+
+  def run_in(func, {amount, unit} = delay, opts)
+      when is_function(func) and is_integer(amount) and is_atom(unit) do
+        {job_opts, opts} =
+          Keyword.split(opts, [:name, :repeat, :timezone, :overlap, :context, :run_once])
+        job = SchedEx.Runner.to_job(func, delay, job_opts)
+
+        SchedEx.Runner.run(job, opts)
+  end
+
+  def run_in(func, delay, opts) when is_function(func) and is_integer(delay) do
+    {job_opts, opts} =
+      Keyword.split(opts, [:name, :repeat, :timezone, :overlap, :context, :run_once])
+    job = SchedEx.Runner.to_job(func, delay, job_opts)
+
+    SchedEx.Runner.run(job, opts)
   end
 
   @doc """
@@ -87,7 +103,12 @@ defmodule SchedEx do
   def run_every(func, crontab, opts \\ []) when is_function(func) do
     case as_crontab(crontab) do
       {:ok, expression} ->
-        SchedEx.Runner.run(func, expression, Keyword.put_new(opts, :repeat, true))
+        opts = Keyword.put_new(opts, :repeat, true)
+        {job_opts, opts} =
+          Keyword.split(opts, [:name, :repeat, :timezone, :overlap, :context, :run_once])
+        job = SchedEx.Runner.to_job(func, expression, job_opts)
+
+        SchedEx.Runner.run(job, opts)
 
       {:error, _} = error ->
         error
@@ -99,11 +120,16 @@ defmodule SchedEx do
     SchedEx.Runner.run(job, opts)
   end
 
+  def update_job(job, opts \\ []) do
+    opts = Keyword.put_new(opts, :repeat, true)
+    SchedEx.Runner.update(job, opts)
+  end
+
   @doc """
   Cancels the given scheduled job
   """
-  def cancel(token) do
-    SchedEx.Runner.cancel(token)
+  def cancel(pid) do
+    SchedEx.Runner.cancel(pid)
   end
 
   @doc """
@@ -116,8 +142,8 @@ defmodule SchedEx do
   * `execution_time`: The amount of time the job spent executing. Value specified in microseconds.
 
   """
-  def stats(token) do
-    SchedEx.Runner.stats(token)
+  def stats(pid) do
+    SchedEx.Runner.stats(pid)
   end
 
   defp mfa_to_fn(m, f, args) do
