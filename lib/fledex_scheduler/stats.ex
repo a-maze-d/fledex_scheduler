@@ -3,13 +3,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 # SPDX-License-Identifier: MIT
-defmodule Fledex.Scheduler.SchedEx.Stats do
+defmodule Fledex.Scheduler.Stats do
   @moduledoc """
   Some stats.
   Caution: probably this will be removed an replaced with telemetry instead
   """
 
-  alias Fledex.Scheduler.SchedEx.Stats.Value
+  alias Fledex.Scheduler.Stats.Value
 
   defstruct scheduling_delay: %Value{}, quantization_error: %Value{}, execution_time: %Value{}
 

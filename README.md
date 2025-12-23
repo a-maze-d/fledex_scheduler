@@ -1,3 +1,4 @@
+<!-- 
 <img src="https://user-images.githubusercontent.com/79646/36270991-42e8d440-124b-11e8-9bd6-17cfc02b77fa.png" alt="SchedEx" width="300"/>
 
 [![Build Status](https://github.com/SchedEx/SchedEx/workflows/Elixir%20CI/badge.svg)](https://github.com/SchedEx/SchedEx/actions)
@@ -6,7 +7,16 @@
 [![Total Download](https://img.shields.io/hexpm/dt/sched_ex.svg)](https://hex.pm/packages/sched_ex)
 [![License](https://img.shields.io/hexpm/l/sched_ex.svg)](https://github.com/SchedEx/SchedEx/blob/master/LICENSE.md)
 [![Last Updated](https://img.shields.io/github/last-commit/SchedEx/SchedEx.svg)](https://github.com/SchedEx/SchedEx/commits/master)
+-->
 
+> [!IMPORTANT]
+> This repository is based on [SchedEx](https://github.com/SchedEx/SchedEx), but got 
+> heavily modified to fit the needs of [Fledex](https://github.com/a-maze-d/fledex). I tried
+> to keep the interface still the same, so you should be able to use it as a drop-in
+> replacement as well.
+>
+> Not everything has been adjusted to the new home and therefore you will still find a lot
+> of references to SchedEx (that might, or might not be accurate).
 
 SchedEx is a simple yet deceptively powerful scheduling library for Elixir. Though it is almost trivially simple by
 design, it enables a number of very powerful use cases to be accomplished with very little effort.

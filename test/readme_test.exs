@@ -6,7 +6,7 @@
 defmodule Fledex.Scheduler.ExampleTest do
   use ExUnit.Case, async: false
 
-  alias Fledex.Scheduler.SchedEx
+  alias Fledex.Scheduler
 
   defmodule AgentHelper do
     def set(agent, value) do
@@ -34,11 +34,11 @@ defmodule Fledex.Scheduler.ExampleTest do
   end
 
   test "updates the agent at 10am every morning", context do
-    SchedEx.run_every(AgentHelper, :set, [context.agent, :sched_ex_scheduled_time], "* 10 * * *",
+    Scheduler.run_every(AgentHelper, :set, [context.agent, :sched_ex_scheduled_time], "* 10 * * *",
       time_scale: TestTimeScale
     )
 
-    # Let SchedEx run through a day's worth of scheduling time
+    # Let `Fledex.Scheduler` run through a day's worth of scheduling time
     Process.sleep(1000)
 
     expected_time =

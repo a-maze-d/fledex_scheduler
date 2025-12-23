@@ -3,14 +3,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 # SPDX-License-Identifier: MIT
-defmodule Fledex.Scheduler.SchedEx.Runner do
+defmodule Fledex.Scheduler.Runner do
   @moduledoc false
 
   use GenServer
 
-  alias Fledex.Scheduler.SchedEx.IdentityTimeScale
-  alias Fledex.Scheduler.SchedEx.Job
-  alias Fledex.Scheduler.SchedEx.Stats
+  alias Fledex.Scheduler.IdentityTimeScale
+  alias Fledex.Scheduler.Job
+  alias Fledex.Scheduler.Stats
 
   @type executor_opts :: keyword
   @type t :: %{

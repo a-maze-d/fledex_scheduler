@@ -1,12 +1,12 @@
-defmodule SchedEx.Mixfile do
+defmodule Fledex.Scheduler.Mixfile do
   use Mix.Project
 
-  @source_url "https://github.com/SchedEx/SchedEx"
-  @version "1.1.4"
+  @source_url "https://github.com/a_maze_d/schedex"
+  @version "0.1.0-dev"
 
   def project do
     [
-      app: :sched_ex,
+      app: :fledex_scheduler,
       version: @version,
       elixir: "~> 1.19",
       start_permanent: Mix.env() == :prod,
@@ -14,7 +14,7 @@ defmodule SchedEx.Mixfile do
       deps: deps(),
       docs: docs(),
       dialyzer: dialyzer(),
-      name: "SchedEx",
+      name: "Fledex_Scheduler",
       test_coverage: [
         tool: ExCoveralls
       ]

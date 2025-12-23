@@ -3,12 +3,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 # SPDX-License-Identifier: MIT
-defmodule Fledex.Scheduler.SchedEx.TimeScale do
+defmodule Fledex.Scheduler.TimeScale do
   @moduledoc """
-  Constrols time in Fledex.Scheduler.SchedEx, often used to speed up test runs, or implement
+  Constrols time in Fledex.Scheduler, often used to speed up test runs, or implement
   custom timing loops.
 
-  Default implementation is `Fledex.Scheduler.SchedEx.IdentityTimeScale`.
+  Default implementation is `Fledex.Scheduler.IdentityTimeScale`.
   """
 
   @doc """

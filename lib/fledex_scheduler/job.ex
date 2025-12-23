@@ -1,11 +1,11 @@
 # Copyright 2025, Matthias Reik <fledex@reik.org>
 #
 # SPDX-License-Identifier: Apache-2.0
-defmodule Fledex.Scheduler.SchedEx.Job do
+defmodule Fledex.Scheduler.Job do
   @moduledoc """
   A job that determines the behaviour of scheduler. Instead of calling
-  `Fledex.Scheduler.SchedEx.run_at/2`, `Fledex.Scheduler.SchedEx.run_in/2`, and `Fledex.Scheduler.SchedEx.run_every` you
-  can specify your job and use `Fledex.Scheduler.SchedEx.run_job/2`
+  `Fledex.Scheduler.run_at/2`, `Fledex.Scheduler.run_in/2`, and `Fledex.Scheduler.run_every` you
+  can specify your job and use `Fledex.Scheduler.run_job/2`
   """
 
   alias __MODULE__

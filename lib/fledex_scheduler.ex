@@ -3,15 +3,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 # SPDX-License-Identifier: MIT
-defmodule Fledex.Scheduler.SchedEx do
+defmodule Fledex.Scheduler do
   @moduledoc """
-  `Fledex.Scheduler.SchedEx` schedules jobs (either an m,f,a or a function) to run in the future. These jobs are run in isolated processes, and are unsurpervised.
+  `Fledex.Scheduler` schedules jobs (either an m,f,a or a function) to run in the future. These jobs are run in isolated processes, and are unsurpervised.
   """
 
   alias Crontab.CronExpression
   alias Crontab.CronExpression.Parser
-  alias Fledex.Scheduler.SchedEx.Runner
-  alias Fledex.Scheduler.SchedEx.Stats
+  alias Fledex.Scheduler.Runner
+  alias Fledex.Scheduler.Stats
 
   @doc """
   Runs the given module, function and argument at the given time
@@ -42,8 +42,8 @@ defmodule Fledex.Scheduler.SchedEx do
 
   * `repeat`: Whether or not this job should be recurring
   * `start_time`: A `DateTime` to use as the basis to offset from
-  * `time_scale`: A module that implements the `Fledex.Scheduler.SchedEx.TimeScale` behaviour, by
-  default is set to `Fledex.Scheduler.SchedEx.IdentityTimeScale`. Can be used to speed up time
+  * `time_scale`: A module that implements the `Fledex.Scheduler.TimeScale` behaviour, by
+  default is set to `Fledex.Scheduler.IdentityTimeScale`. Can be used to speed up time
   (often used for speeding up test runs)
   * `name`: To attach a name to the process. Useful for adding a name to Registry
   to lookup later. ie. {:via, Registry, {YourRegistryName, "scheduled-task-1"}}
@@ -96,8 +96,8 @@ defmodule Fledex.Scheduler.SchedEx do
 
   * `timezone`: A string timezone identifier (`America/Chicago`) specifying the timezone within which
   the crontab should be interpreted. If not specified, defaults to `UTC`
-  * `time_scale`: A module that implements the `Fledex.Scheduler.SchedEx.TimeScale` behaviour, by
-  default is set to `Fledex.Scheduler.SchedEx.IdentityTimeScale`. Can be used to speed up time
+  * `time_scale`: A module that implements the `Fledex.Scheduler.TimeScale` behaviour, by
+  default is set to `Fledex.Scheduler.IdentityTimeScale`. Can be used to speed up time
   (often used for speeding up test runs)
   * `name`: To attach a name to the process. Useful for adding a name to Registry
   to lookup later. ie. {:via, Registry, {YourRegistryName, "scheduled-task-1"}}

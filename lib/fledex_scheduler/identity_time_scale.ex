@@ -3,13 +3,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 # SPDX-License-Identifier: MIT
-defmodule Fledex.Scheduler.SchedEx.IdentityTimeScale do
+defmodule Fledex.Scheduler.IdentityTimeScale do
   @moduledoc """
   The default module used to set the `time_scale`. Can be thought of as "normal time" where "now" is now and speedup is 1 (no speedup).
   """
-  @behaviour Fledex.Scheduler.SchedEx.TimeScale
+  @behaviour Fledex.Scheduler.TimeScale
 
-  alias Fledex.Scheduler.SchedEx.TimeScale
+  alias Fledex.Scheduler.TimeScale
 
   @impl TimeScale
   def now(timezone) do

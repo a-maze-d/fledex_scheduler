@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 # SPDX-License-Identifier: MIT
-defmodule Fledex.Scheduler.SchedEx.Stats.Value do
+defmodule Fledex.Scheduler.Stats.Value do
   @moduledoc """
   A statistic value.
   Caution: This is likely to be removed and replaced with telemetry
