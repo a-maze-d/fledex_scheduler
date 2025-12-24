@@ -1,7 +1,7 @@
 defmodule Fledex.Scheduler.Mixfile do
   use Mix.Project
 
-  @source_url "https://github.com/a_maze_d/schedex"
+  @source_url "https://github.com/a_maze_d/fledex_scheduler"
   @version "0.1.0-dev"
 
   def project do
@@ -29,7 +29,7 @@ defmodule Fledex.Scheduler.Mixfile do
 
   defp deps do
     [
-      {:crontab, "~> 1.1.2"},
+      {:crontab, "~> 1.2.0"},
       {:ex_doc, ">= 0.0.0", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.0", only: [:dev, :test], runtime: false},
       {:credo, "~> 1.0", only: [:dev, :test], runtime: false},
