@@ -22,18 +22,18 @@ defmodule Fledex.Scheduler.Runner do
           stats: Stats.t(),
           opts: keyword
         }
+
+
+  defdelegate run(job, test_opts, server_opts \\ []), to: __MODULE__, as: :start_link
+
   @doc """
   Main point of entry into this module. Starts and returns a process which will
   run the given function per the specified `job` definition
   """
-  @spec run(Job.t(), executor_opts()) :: GenServer.on_start()
-  def run(%Job{name: name} = job, opts) do
-    GenServer.start_link(__MODULE__, {job, opts}, name: name)
-  end
-
-  @spec start_link(Job.t(), keyword) :: GenServer.on_start()
-  def start_link(job, server_opts \\ []) do
-    GenServer.start_link(__MODULE__, {job, []}, server_opts)
+  @spec start_link(Job.t(), keyword, keyword) :: GenServer.on_start()
+  def start_link(%Job{name: name} = job, test_opts \\ [], server_opts \\ []) do
+    server_opts = Keyword.put_new(server_opts, :name, name)
+    GenServer.start_link(__MODULE__, {job, test_opts}, server_opts)
   end
 
   @doc """

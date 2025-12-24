@@ -72,7 +72,7 @@ defmodule Fledex.Scheduler do
 
     job = Runner.to_job(func, delay, job_opts)
 
-    Runner.run(job, opts)
+    Runner.run(job, opts, [])
   end
 
   @spec run_in(Job.task(), pos_integer, keyword) :: GenServer.on_start()
@@ -84,7 +84,7 @@ defmodule Fledex.Scheduler do
 
     job = Runner.to_job(func, delay, job_opts)
 
-    Runner.run(job, opts)
+    Runner.run(job, opts, [])
   end
 
   @doc """
@@ -134,7 +134,7 @@ defmodule Fledex.Scheduler do
 
         job = Runner.to_job(func, expression, job_opts)
 
-        Runner.run(job, opts)
+        Runner.run(job, opts, [])
 
       {:error, _msg} = error ->
         error
@@ -144,7 +144,7 @@ defmodule Fledex.Scheduler do
   @spec run_job(Job.t(), keyword) :: GenServer.on_start()
   def run_job(job, opts \\ []) do
     opts = Keyword.put_new(opts, :repeat, true)
-    Runner.run(job, opts)
+    Runner.run(job, opts, [])
   end
 
   @spec update_job(GenServer.server(), Job.t(), keyword) :: :ok
