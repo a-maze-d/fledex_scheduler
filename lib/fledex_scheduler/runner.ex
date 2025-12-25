@@ -219,10 +219,6 @@ defmodule Fledex.Scheduler.Runner do
     |> prepare_for_next_iteration()
   end
 
-  def handle_info(:shutdown, state) do
-    {:stop, :normal, state}
-  end
-
   def handle_info({:EXIT, _pid, :normal}, state) do
     {:noreply, state}
   end

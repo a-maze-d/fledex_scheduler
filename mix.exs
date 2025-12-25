@@ -2,7 +2,7 @@ defmodule Fledex.Scheduler.Mixfile do
   use Mix.Project
 
   @source_url "https://github.com/a_maze_d/fledex_scheduler"
-  @version "0.1.0-dev"
+  @version "0.1.0"
 
   def project do
     [
@@ -69,10 +69,10 @@ defmodule Fledex.Scheduler.Mixfile do
 
   defp package do
     [
-      description: "SchedEx is a simple yet deceptively powerful scheduling library for Elixir.",
+      description: "Fledex_Scheduler is a fork of SchedEx, a simple yet deceptively powerful scheduling library for Elixir, adjusted for the use with Fledex",
       files: ["lib", "test", "config", "mix.exs", "README*", "LICENSE*"],
-      maintainers: ["Mat Trudel"],
-      licenses: ["MIT"],
+      maintainers: ["Matthias Reik"],
+      licenses: ["MIT", "Apache-2.0"],
       links: %{"GitHub" => @source_url}
     ]
   end
