@@ -1,21 +1,32 @@
-defmodule SchedEx do
+# Copyright 2025, Matthias Reik <fledex@reik.org>
+# Modified version of : https://github.com/SchedEx/SchedEx
+#
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: MIT
+defmodule Fledex.Scheduler do
   @moduledoc """
-  SchedEx schedules jobs (either an m,f,a or a function) to run in the future. These jobs are run in isolated processes, and are unsurpervised.
+  `Fledex.Scheduler` schedules jobs (either an m,f,a or a function) to run in the future. These jobs are run in isolated processes, and are unsurpervised.
   """
 
+  alias Crontab.CronExpression
   alias Crontab.CronExpression.Parser
+  alias Fledex.Scheduler.Runner
+  alias Fledex.Scheduler.Stats
 
   @doc """
   Runs the given module, function and argument at the given time
   """
+  @spec run_at(module(), atom(), list(), DateTime.t(), keyword) :: GenServer.on_start()
   def run_at(m, f, a, %DateTime{} = time, opts \\ [])
       when is_atom(m) and is_atom(f) and is_list(a) do
+    # TODO: Why do we handle {m, f, a}s differently for run_at and run_in?
     run_at(fn -> apply(m, f, a) end, time, opts)
   end
 
   @doc """
   Runs the given function at the given time
   """
+  @spec run_at(Job.task(), DateTime.t(), keyword) :: GenServer.on_start()
   def run_at(func, %DateTime{} = time, opts \\ []) when is_function(func) do
     delay = DateTime.diff(time, DateTime.utc_now(), :millisecond)
     run_in(func, delay, opts)
@@ -31,12 +42,13 @@ defmodule SchedEx do
 
   * `repeat`: Whether or not this job should be recurring
   * `start_time`: A `DateTime` to use as the basis to offset from
-  * `time_scale`: A module that implements the `SchedEx.TimeScale` behaviour, by
-  default is set to `SchedEx.IdentityTimeScale`. Can be used to speed up time
+  * `time_scale`: A module that implements the `Fledex.Scheduler.TimeScale` behaviour, by
+  default is set to `Fledex.Scheduler.IdentityTimeScale`. Can be used to speed up time
   (often used for speeding up test runs)
   * `name`: To attach a name to the process. Useful for adding a name to Registry
   to lookup later. ie. {:via, Registry, {YourRegistryName, "scheduled-task-1"}}
   """
+  @spec run_in(module, atom(), list(), pos_integer, keyword) :: GenServer.on_start()
   def run_in(m, f, a, delay, opts \\ []) when is_atom(m) and is_atom(f) and is_list(a) do
     run_in(mfa_to_fn(m, f, a), delay, opts)
   end
@@ -48,8 +60,31 @@ defmodule SchedEx do
 
   Takes the same options as `run_in/5`
   """
-  def run_in(func, delay, opts \\ []) when is_function(func) and is_integer(delay) do
-    SchedEx.Runner.run(func, delay, opts)
+  @spec run_in(Job.task(), Job.schedule() | pos_integer, keyword) :: GenServer.on_start()
+  def run_in(func, delay, opts \\ [])
+
+  def run_in(func, {amount, unit} = delay, opts)
+      when is_function(func) and is_integer(amount) and is_atom(unit) do
+    {job_opts, opts} =
+      Keyword.split(opts, [:name, :repeat, :timezone, :overlap, :context, :run_once])
+
+    job_opts = Keyword.put_new(job_opts, :repeat, 1)
+
+    job = Runner.to_job(func, delay, job_opts)
+
+    Runner.run(job, opts, [])
+  end
+
+  @spec run_in(Job.task(), pos_integer, keyword) :: GenServer.on_start()
+  def run_in(func, delay, opts) when is_function(func) and is_integer(delay) do
+    {job_opts, opts} =
+      Keyword.split(opts, [:name, :repeat, :timezone, :overlap, :context, :run_once])
+
+    job_opts = Keyword.put_new(job_opts, :repeat, 1)
+
+    job = Runner.to_job(func, delay, job_opts)
+
+    Runner.run(job, opts, [])
   end
 
   @doc """
@@ -61,8 +96,8 @@ defmodule SchedEx do
 
   * `timezone`: A string timezone identifier (`America/Chicago`) specifying the timezone within which
   the crontab should be interpreted. If not specified, defaults to `UTC`
-  * `time_scale`: A module that implements the `SchedEx.TimeScale` behaviour, by
-  default is set to `SchedEx.IdentityTimeScale`. Can be used to speed up time
+  * `time_scale`: A module that implements the `Fledex.Scheduler.TimeScale` behaviour, by
+  default is set to `Fledex.Scheduler.IdentityTimeScale`. Can be used to speed up time
   (often used for speeding up test runs)
   * `name`: To attach a name to the process. Useful for adding a name to Registry
   to lookup later. ie. {:via, Registry, {YourRegistryName, "scheduled-task-1"}}
@@ -74,7 +109,10 @@ defmodule SchedEx do
     midnight, which will be at 3:30 CDT 10 March 2019).
 
   """
+  @spec run_every(module(), atom(), list(), String.t() | CronExpression.t(), keyword) ::
+          GenServer.on_start()
   def run_every(m, f, a, crontab, opts \\ []) when is_atom(m) and is_atom(f) and is_list(a) do
+    opts = Keyword.put_new(opts, :repeat, true)
     run_every(mfa_to_fn(m, f, a), crontab, opts)
   end
 
@@ -84,21 +122,43 @@ defmodule SchedEx do
 
   Takes the same options as `run_every/5`
   """
+  @spec run_every(Job.task(), String.t() | CronExpression.t(), keyword) ::
+          GenServer.on_start() | {:error, any}
   def run_every(func, crontab, opts \\ []) when is_function(func) do
     case as_crontab(crontab) do
       {:ok, expression} ->
-        SchedEx.Runner.run(func, expression, Keyword.put_new(opts, :repeat, true))
+        opts = Keyword.put_new(opts, :repeat, true)
 
-      {:error, _} = error ->
+        {job_opts, opts} =
+          Keyword.split(opts, [:name, :repeat, :timezone, :overlap, :context, :run_once])
+
+        job = Runner.to_job(func, expression, job_opts)
+
+        Runner.run(job, opts, [])
+
+      {:error, _msg} = error ->
         error
     end
+  end
+
+  @spec run_job(Job.t(), keyword) :: GenServer.on_start()
+  def run_job(job, opts \\ []) do
+    opts = Keyword.put_new(opts, :repeat, true)
+    Runner.run(job, opts, [])
+  end
+
+  @spec update_job(GenServer.server(), Job.t(), keyword) :: :ok
+  def update_job(server, job, opts \\ []) do
+    opts = Keyword.put_new(opts, :repeat, true)
+    Runner.change_config(server, job, opts)
   end
 
   @doc """
   Cancels the given scheduled job
   """
-  def cancel(token) do
-    SchedEx.Runner.cancel(token)
+  @spec cancel(GenServer.server()) :: :ok
+  def cancel(server) do
+    Runner.cancel(server)
   end
 
   @doc """
@@ -111,8 +171,9 @@ defmodule SchedEx do
   * `execution_time`: The amount of time the job spent executing. Value specified in microseconds.
 
   """
-  def stats(token) do
-    SchedEx.Runner.stats(token)
+  @spec stats(GenServer.server()) :: Stats.t()
+  def stats(name) do
+    Runner.stats(name)
   end
 
   defp mfa_to_fn(m, f, args) do

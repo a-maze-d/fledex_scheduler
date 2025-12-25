@@ -1,10 +1,25 @@
-defmodule SchedEx.Stats do
-  @moduledoc false
+# Copyright 2025, Matthias Reik <fledex@reik.org>
+# Modified version of : https://github.com/SchedEx/SchedEx
+#
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-License-Identifier: MIT
+defmodule Fledex.Scheduler.Stats do
+  @moduledoc """
+  Some stats.
+  Caution: probably this will be removed an replaced with telemetry instead
+  """
 
-  alias SchedEx.Stats.Value
+  alias Fledex.Scheduler.Stats.Value
 
   defstruct scheduling_delay: %Value{}, quantization_error: %Value{}, execution_time: %Value{}
 
+  @type t :: %__MODULE__{
+          scheduling_delay: Value.t(),
+          quantization_error: Value.t(),
+          execution_time: Value.t()
+        }
+
+  @spec update(t(), DateTime.t(), DateTime.t(), DateTime.t(), DateTime.t()) :: t()
   def update(
         %__MODULE__{
           scheduling_delay: %Value{} = scheduling_delay,
