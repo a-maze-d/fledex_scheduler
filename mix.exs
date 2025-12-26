@@ -8,7 +8,7 @@ defmodule Fledex.Scheduler.Mixfile do
     [
       app: :fledex_scheduler,
       version: @version,
-      elixir: "~> 1.18",
+      elixir: "~> 1.17",
       start_permanent: Mix.env() == :prod,
       package: package(),
       deps: deps(),
