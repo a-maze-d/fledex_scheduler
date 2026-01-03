@@ -634,7 +634,9 @@ defmodule Fledex.SchedulerTest do
 
   describe "run_job" do
     test "to_job" do
-      assert %Job{schedule: {10, :ms}, name: :test, opts: opts} =Job.to_job(fn -> :ok end, 10, name: :test)
+      assert %Job{schedule: {10, :ms}, name: :test, opts: opts} =
+               Job.to_job(fn -> :ok end, 10, name: :test)
+
       assert {:repeat, 1} in opts
 
       # we don't allow a string as repeat.
