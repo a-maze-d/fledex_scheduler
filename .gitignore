@@ -1,3 +1,7 @@
+# Copyright 2023-2024, Matthias Reik <fledex@reik.org>
+#
+# SPDX-License-Identifier: MIT
+
 # The directory Mix will write compiled artifacts to.
 /_build/
 
@@ -20,13 +24,16 @@ erl_crash.dump
 *.ez
 
 # Ignore package tarball (built via "mix hex.build").
-sched_ex-*.tar
+fledex_scheduler-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
 
 # Ignore dialyzer caches.
 /priv/plts/
+
+# backup files
+/pages/*.bkp
 
 # tool versions
 .tool-versions
