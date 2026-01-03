@@ -633,6 +633,16 @@ defmodule Fledex.SchedulerTest do
   end
 
   describe "run_job" do
+    test "to_job" do
+      assert %Job{schedule: {10, :ms}, name: :test, opts: opts} =Job.to_job(fn -> :ok end, 10, name: :test)
+      assert {:repeat, 1} in opts
+
+      # we don't allow a string as repeat.
+      assert_raise(ArgumentError, fn ->
+        Job.to_job(fn -> :ok end, 10, name: :test2, repeat: "10")
+      end)
+    end
+
     test "run job with crontab", context do
       {:ok, _pid} =
         start_supervised({TestTimeScale, {DateTime.utc_now(), 1}}, restart: :temporary)
@@ -645,6 +655,7 @@ defmodule Fledex.SchedulerTest do
         |> Job.set_schedule(crontab)
         |> Job.set_task(fn -> TestCallee.append(context.agent, 1) end)
         |> Job.set_repeat(true)
+        |> Job.set_run_once(false)
         |> Job.set_timezone("Etc/UTC")
         |> Job.set_overlap(false)
         |> Job.set_context(%{strip_name: :test_strip, job: :test_job})

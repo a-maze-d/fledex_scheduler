@@ -161,7 +161,7 @@ defmodule Fledex.Scheduler.Job do
         false -> 1
         true -> true
         other when is_integer(other) -> other
-        _other -> raise "repeat is neither a boolean nor a positive integer"
+        _other -> raise(ArgumentError, "repeat is neither a boolean nor a positive integer")
       end
 
     %Job{
