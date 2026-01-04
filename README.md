@@ -1,4 +1,11 @@
 <!-- 
+Copyright 2025-2026, Matthias Reik <fledex@reik.org>
+Modified version of : https://github.com/SchedEx/SchedEx
+
+SPDX-License-Identifier: MIT
+-->
+
+<!-- 
 <img src="https://user-images.githubusercontent.com/79646/36270991-42e8d440-124b-11e8-9bd6-17cfc02b77fa.png" alt="SchedEx" width="300"/>
 
 [![Build Status](https://github.com/SchedEx/SchedEx/workflows/Elixir%20CI/badge.svg)](https://github.com/SchedEx/SchedEx/actions)

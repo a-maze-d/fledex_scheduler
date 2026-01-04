@@ -1,7 +1,6 @@
-# Copyright 2025, Matthias Reik <fledex@reik.org>
+# Copyright 2025-2026, Matthias Reik <fledex@reik.org>
 # Modified version of : https://github.com/SchedEx/SchedEx
 #
-# SPDX-License-Identifier: Apache-2.0
 # SPDX-License-Identifier: MIT
 defmodule Fledex.Scheduler.ExampleTest do
   use ExUnit.Case, async: false
@@ -34,7 +33,11 @@ defmodule Fledex.Scheduler.ExampleTest do
   end
 
   test "updates the agent at 10am every morning", context do
-    Scheduler.run_every(AgentHelper, :set, [context.agent, :sched_ex_scheduled_time], "* 10 * * *",
+    Scheduler.run_every(
+      AgentHelper,
+      :set,
+      [context.agent, :sched_ex_scheduled_time],
+      "* 10 * * *",
       time_scale: TestTimeScale
     )
 
@@ -45,7 +48,6 @@ defmodule Fledex.Scheduler.ExampleTest do
       %{DateTime.utc_now() | hour: 0, minute: 0, second: 0, microsecond: {0, 0}}
       |> DateTime.shift(hour: 34)
 
-    # FIXME: I think this test is failing depending on the time of day it's run
     assert DateTime.diff(AgentHelper.get(context.agent), expected_time) == 0
   end
 end

@@ -1,23 +1,88 @@
+# Copyright 2026, Matthias Reik <fledex@reik.org>
+#
+# SPDX-License-Identifier: MIT
+
 name: Elixir CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "main" ]
   pull_request:
-  workflow_dispatch:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
 
 jobs:
   test:
-    uses: mtrudel/elixir-ci-actions/.github/workflows/test.yml@main
-  lint:
-    uses: mtrudel/elixir-ci-actions/.github/workflows/lint.yml@main
-  re-run:
-    needs: [test, lint]
-    if: failure() && fromJSON(github.run_attempt) < 6
+    name: Build and test
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - elixir: 1.17.x
+            otp: 27
+          - elixir: 1.18.x
+            otp: 27
+          - elixir: 1.18.x
+            otp: 28
+          - elixir: 1.19.x
+            otp: 28
+            coverage: true
+            other_checks: true
     steps:
-      - env:
-          GH_REPO: ${{ github.repository }}
-          GH_TOKEN: ${{ github.token }}
-          GH_DEBUG: api
-        run: gh workflow run rerun.yml -F run_id=${{ github.run_id }}
+    - name: Harden the runner (Audit all outbound calls)
+      uses: step-security/harden-runner@20cf305ff2072d973412fa9b1e3a4f227bda3c76 # v2.14.0
+      with:
+        egress-policy: audit
+
+    - name: Checkout repository
+      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      with:
+        fetch-depth: 0
+ 
+    - name: Set up Elixir
+      uses: erlef/setup-beam@e6d7c94229049569db56a7ad5a540c051a010af9 # v1.20.4
+      with:
+        otp-version: ${{matrix.otp}}
+        elixir-version: ${{matrix.elixir}}
+
+    - name: Restore dependencies cache
+      uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
+      with:
+        path: deps/
+        key: test-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
+
+    - name: Restore build cache
+      uses: actions/cache@9255dc7a253b0ccc959486e2bca901246202afeb # v5.0.1
+      with:
+        path: _build/test/
+        key: test-${{ runner.os }}-${{ matrix.otp }}-${{ matrix.elixir }}-${{ hashFiles('**/mix.lock') }}
+        
+
+    - name: Install dependencies
+      run: |
+        mix local.rebar --force
+        mix local.hex --force
+        mix deps.get
+        mix deps.compile
+
+    - name: Compile app
+      run: mix compile --warning-as-error
+
+    - name: Run tests
+      run: mix test
+      env:
+        MIX_ENV: test
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: run all quality checks
+      if: ${{ matrix.other_checks }}
+      run: mix check
+
+    - name: Check coverage
+      if: ${{ matrix.coverage }}
+      run: mix coveralls.github
+      env:
+        MIX_ENV: test
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

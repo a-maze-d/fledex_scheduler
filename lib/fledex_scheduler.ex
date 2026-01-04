@@ -1,15 +1,19 @@
-# Copyright 2025, Matthias Reik <fledex@reik.org>
+# Copyright 2025-2026, Matthias Reik <fledex@reik.org>
 # Modified version of : https://github.com/SchedEx/SchedEx
 #
-# SPDX-License-Identifier: Apache-2.0
 # SPDX-License-Identifier: MIT
 defmodule Fledex.Scheduler do
   @moduledoc """
-  `Fledex.Scheduler` schedules jobs (either an m,f,a or a function) to run in the future. These jobs are run in isolated processes, and are unsurpervised.
+  `Fledex.Scheduler` schedules jobs (either an m,f,a or a function) to run in the future.
+  These jobs are run in isolated processes, and are unsurpervised.
+
+  For even more control, you can use `Fledex.Scheduler.Runner` directly that even allwos
+  you to provide your own process names, and to attach it to a supervision tree.
   """
 
   alias Crontab.CronExpression
   alias Crontab.CronExpression.Parser
+  alias Fledex.Scheduler.Job
   alias Fledex.Scheduler.Runner
   alias Fledex.Scheduler.Stats
 
@@ -19,7 +23,6 @@ defmodule Fledex.Scheduler do
   @spec run_at(module(), atom(), list(), DateTime.t(), keyword) :: GenServer.on_start()
   def run_at(m, f, a, %DateTime{} = time, opts \\ [])
       when is_atom(m) and is_atom(f) and is_list(a) do
-    # TODO: Why do we handle {m, f, a}s differently for run_at and run_in?
     run_at(fn -> apply(m, f, a) end, time, opts)
   end
 
@@ -70,7 +73,7 @@ defmodule Fledex.Scheduler do
 
     job_opts = Keyword.put_new(job_opts, :repeat, 1)
 
-    job = Runner.to_job(func, delay, job_opts)
+    job = Job.to_job(func, delay, job_opts)
 
     Runner.run(job, opts, [])
   end
@@ -82,7 +85,7 @@ defmodule Fledex.Scheduler do
 
     job_opts = Keyword.put_new(job_opts, :repeat, 1)
 
-    job = Runner.to_job(func, delay, job_opts)
+    job = Job.to_job(func, delay, job_opts)
 
     Runner.run(job, opts, [])
   end
@@ -132,7 +135,7 @@ defmodule Fledex.Scheduler do
         {job_opts, opts} =
           Keyword.split(opts, [:name, :repeat, :timezone, :overlap, :context, :run_once])
 
-        job = Runner.to_job(func, expression, job_opts)
+        job = Job.to_job(func, expression, job_opts)
 
         Runner.run(job, opts, [])
 
@@ -141,16 +144,32 @@ defmodule Fledex.Scheduler do
     end
   end
 
+  @doc """
+  You can run a `Fledex.Scheduler.Job` by calling this function.
+
+  All the other `run_*` functions actually map to a job under the hood and therefore this function provides
+  you with the most flexibility and power.
+
+  The additionl `opts` (keyword list) is for passing some extra settings that are mainly interesting for
+  testing.
+  """
   @spec run_job(Job.t(), keyword) :: GenServer.on_start()
   def run_job(job, opts \\ []) do
     opts = Keyword.put_new(opts, :repeat, true)
     Runner.run(job, opts, [])
   end
 
-  @spec update_job(GenServer.server(), Job.t(), keyword) :: :ok
-  def update_job(server, job, opts \\ []) do
+  @doc """
+  You can update the job (for example change your scheduling) by calling
+  this function
+
+  If you used `run_job/2` your process will get the name of the job nad throuh
+  this the job will be identified.
+  """
+  @spec update_job(Job.t(), keyword) :: :ok
+  def update_job(%Job{name: name} = job, opts \\ []) do
     opts = Keyword.put_new(opts, :repeat, true)
-    Runner.change_config(server, job, opts)
+    Runner.change_config(name, job, opts)
   end
 
   @doc """

@@ -1,7 +1,6 @@
-# Copyright 2025, Matthias Reik <fledex@reik.org>
+# Copyright 2025-2026, Matthias Reik <fledex@reik.org>
 # Modified version of : https://github.com/SchedEx/SchedEx
 #
-# SPDX-License-Identifier: Apache-2.0
 # SPDX-License-Identifier: MIT
 defmodule Fledex.Scheduler.IdentityTimeScale do
   @moduledoc """

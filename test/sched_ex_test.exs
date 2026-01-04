@@ -1,7 +1,6 @@
-# Copyright 2025, Matthias Reik <fledex@reik.org>
+# Copyright 2025-2026, Matthias Reik <fledex@reik.org>
 # Modified version of : https://github.com/SchedEx/SchedEx
 #
-# SPDX-License-Identifier: Apache-2.0
 # SPDX-License-Identifier: MIT
 defmodule Fledex.SchedulerTest do
   use ExUnit.Case, async: true
@@ -287,7 +286,10 @@ defmodule Fledex.SchedulerTest do
     end
 
     test "can repeat", context do
-      Scheduler.run_in(fn -> TestCallee.append(context.agent, 1) end, @sleep_duration, repeat: true)
+      Scheduler.run_in(fn -> TestCallee.append(context.agent, 1) end, @sleep_duration,
+        repeat: true
+      )
+
       Process.sleep(round(2.5 * @sleep_duration))
       calls = TestCallee.clear(context.agent)
       assert length(calls) >= 2
@@ -631,6 +633,18 @@ defmodule Fledex.SchedulerTest do
   end
 
   describe "run_job" do
+    test "to_job" do
+      assert %Job{schedule: {10, :ms}, name: :test, opts: opts} =
+               Job.to_job(fn -> :ok end, 10, name: :test)
+
+      assert {:repeat, 1} in opts
+
+      # we don't allow a string as repeat.
+      assert_raise(ArgumentError, fn ->
+        Job.to_job(fn -> :ok end, 10, name: :test2, repeat: "10")
+      end)
+    end
+
     test "run job with crontab", context do
       {:ok, _pid} =
         start_supervised({TestTimeScale, {DateTime.utc_now(), 1}}, restart: :temporary)
@@ -643,6 +657,7 @@ defmodule Fledex.SchedulerTest do
         |> Job.set_schedule(crontab)
         |> Job.set_task(fn -> TestCallee.append(context.agent, 1) end)
         |> Job.set_repeat(true)
+        |> Job.set_run_once(false)
         |> Job.set_timezone("Etc/UTC")
         |> Job.set_overlap(false)
         |> Job.set_context(%{strip_name: :test_strip, job: :test_job})
@@ -665,12 +680,12 @@ defmodule Fledex.SchedulerTest do
         |> Job.set_task(fn -> TestCallee.append(context.agent, 1) end)
         |> Job.set_repeat(true)
 
-      {:ok, pid} = Scheduler.run_job(job, time_scale: TestTimeScale)
+      {:ok, _pid} = Scheduler.run_job(job, time_scale: TestTimeScale)
       Process.sleep(@sleep_duration_plus_margin)
 
       job2 = job |> Job.set_task(fn -> TestCallee.append(context.agent, 2) end)
 
-      Scheduler.update_job(pid, job2, time_scale: TestTimeScale)
+      Scheduler.update_job(job2, time_scale: TestTimeScale)
       Process.sleep(@sleep_duration_plus_margin)
 
       assert TestCallee.clear(context.agent) >= [1, 2]
@@ -688,7 +703,7 @@ defmodule Fledex.SchedulerTest do
         |> Job.set_repeat(true)
         |> Job.set_timezone("Etc/UTC")
 
-      {:ok, pid} = Scheduler.run_job(job, time_scale: TestTimeScale)
+      {:ok, _pid} = Scheduler.run_job(job, time_scale: TestTimeScale)
       Process.sleep(@sleep_duration_plus_margin)
 
       now = DateTime.utc_now()
@@ -704,7 +719,7 @@ defmodule Fledex.SchedulerTest do
         |> Job.set_task(fn -> TestCallee.append(context.agent, 2) end)
         |> Job.set_schedule(crontab)
 
-      assert :shutdown == Scheduler.update_job(pid, job2, time_scale: TestTimeScale)
+      assert :shutdown == Scheduler.update_job(job2, time_scale: TestTimeScale)
     end
   end
 

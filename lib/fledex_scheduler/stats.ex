@@ -1,12 +1,13 @@
-# Copyright 2025, Matthias Reik <fledex@reik.org>
+# Copyright 2025-2026, Matthias Reik <fledex@reik.org>
 # Modified version of : https://github.com/SchedEx/SchedEx
 #
-# SPDX-License-Identifier: Apache-2.0
 # SPDX-License-Identifier: MIT
 defmodule Fledex.Scheduler.Stats do
   @moduledoc """
   Some stats.
-  Caution: probably this will be removed an replaced with telemetry instead
+
+  > #### Caution {: .warning}
+  > This is likely to be removed and replaced with telemetry
   """
 
   alias Fledex.Scheduler.Stats.Value
@@ -19,6 +20,9 @@ defmodule Fledex.Scheduler.Stats do
           execution_time: Value.t()
         }
 
+  @doc """
+  Update the stats with some new measurement
+  """
   @spec update(t(), DateTime.t(), DateTime.t(), DateTime.t(), DateTime.t()) :: t()
   def update(
         %__MODULE__{

@@ -1,12 +1,13 @@
-# Copyright 2025, Matthias Reik <fledex@reik.org>
+# Copyright 2025-2026, Matthias Reik <fledex@reik.org>
 # Modified version of : https://github.com/SchedEx/SchedEx
 #
-# SPDX-License-Identifier: Apache-2.0
 # SPDX-License-Identifier: MIT
 defmodule Fledex.Scheduler.Stats.Value do
   @moduledoc """
   A statistic value.
-  Caution: This is likely to be removed and replaced with telemetry
+
+  > #### Caution {: .warning}
+  > This is likely to be removed and replaced with telemetry
   """
 
   defstruct min: nil, max: nil, avg: nil, count: 0, histogram: List.duplicate(0, 20)
@@ -23,6 +24,9 @@ defmodule Fledex.Scheduler.Stats.Value do
   @weight_factor 2 / (@num_periods + 1)
   @bucket_size 100
 
+  @doc """
+  add a new sample to the list of samples (and recalculate the metrics (`min`, `max`, `min`, ...))
+  """
   @spec update(t(), integer) :: t()
   def update(
         %__MODULE__{min: min, max: max, avg: avg, count: count, histogram: histogram},

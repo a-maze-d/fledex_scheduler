@@ -1,10 +1,12 @@
-# Copyright 2025, Matthias Reik <fledex@reik.org>
+# Copyright 2025-2026, Matthias Reik <fledex@reik.org>
 # Modified version of : https://github.com/SchedEx/SchedEx
 #
-# SPDX-License-Identifier: Apache-2.0
 # SPDX-License-Identifier: MIT
 defmodule Fledex.Scheduler.Runner do
-  @moduledoc false
+  @moduledoc """
+  This module is the actual process that `Fledex.Scheduler` (as a facade with a lot of
+  convenience functions) is using. You can use this module also directly if you need more control.
+  """
 
   use GenServer
 
@@ -23,7 +25,9 @@ defmodule Fledex.Scheduler.Runner do
           opts: keyword
         }
 
-
+  @doc """
+  This function is the same as `start_link/3` and is only here for compatibility reasons
+  """
   defdelegate run(job, test_opts, server_opts \\ []), to: __MODULE__, as: :start_link
 
   @doc """
@@ -87,8 +91,9 @@ defmodule Fledex.Scheduler.Runner do
   end
 
   # MARK: Server API
+  @doc false
   @impl GenServer
-  @spec init({Job.t(), keyword}) :: {:ok, t(), {:continue, {DateTime.t(), keyword}}}
+  @spec init({Job.t(), keyword}) :: {:ok, t(), {:continue, {}}}
   def init({%Job{} = job, opts}) do
     Process.flag(:trap_exit, true)
 
@@ -109,43 +114,9 @@ defmodule Fledex.Scheduler.Runner do
     }
   end
 
-  @spec to_job(Job.task(), Job.schedule() | pos_integer(), keyword) :: Job.t()
-  def to_job(func, spec, job_opts) do
-    spec =
-      case spec do
-        milliseconds when is_integer(milliseconds) -> {milliseconds, :ms}
-        {_value, _unit} = delay -> delay
-        %Crontab.CronExpression{} = crontab -> crontab
-      end
-
-    # we need to ensure that we run our scheduler at least
-    # once, therefore we translate it to the integer version
-    # except if we always want to run it
-    repeat =
-      case Keyword.get(job_opts, :repeat) do
-        nil -> 1
-        false -> 1
-        true -> true
-        other when is_integer(other) -> other
-        _other -> raise "repeat is neither a boolean nor a positive integer"
-      end
-
-    %Job{
-      name: Keyword.get(job_opts, :name, :default_name),
-      func: func,
-      schedule: spec,
-      opts: [
-        timezone: Keyword.get(job_opts, :timezone, "Etc/UTC"),
-        overlap: Keyword.get(job_opts, :overlap, false),
-        run_once: Keyword.get(job_opts, :run_once, false),
-        repeat: repeat
-      ],
-      context: Keyword.get(job_opts, :context, %{})
-    }
-  end
-
+  @doc false
   @impl GenServer
-  @spec handle_continue({DateTime.t(), keyword}, t()) ::
+  @spec handle_continue({}, t()) ::
           {:no_reply, t()} | {:stop, :normal, t()}
   def handle_continue({}, %{job: job} = state) do
     state
@@ -153,6 +124,7 @@ defmodule Fledex.Scheduler.Runner do
     |> prepare_for_next_iteration()
   end
 
+  @doc false
   @impl GenServer
   def handle_call(
         :next_schedule,
@@ -196,22 +168,17 @@ defmodule Fledex.Scheduler.Runner do
       |> run_func_if_necessary(Keyword.get(job.opts, :run_once, false))
       |> prepare_for_next_iteration()
 
-    # IO.puts("result: #{inspect result}")
-
     case result do
       {:noreply, state} -> {:reply, :ok, state}
       {:stop, :normal, state} -> {:reply, :shutdown, state}
     end
-
-    # IO.puts("handle_call...")
-    # new_state =
-    # {:reply, :ok, new_state}
   end
 
   def handle_call(:shutdown, _from, state) do
     {:stop, :normal, :shutdown, state}
   end
 
+  @doc false
   @impl GenServer
   def handle_info(:run, state) do
     state
@@ -380,9 +347,7 @@ defmodule Fledex.Scheduler.Runner do
            scheduled_at: start_time
          } = state
        ) do
-    # IO.puts("prepare_for_next_iteration: #{inspect state}")
     repeat = Keyword.get(job.opts, :repeat, false)
-    # IO.puts("repeat: #{inspect repeat}")
 
     if (is_integer(repeat) and repeat > 0) || (is_boolean(repeat) and repeat) do
       state = %{
