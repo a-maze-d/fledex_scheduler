@@ -5,16 +5,18 @@ Modified version of : https://github.com/SchedEx/SchedEx
 SPDX-License-Identifier: MIT
 -->
 
-<!-- 
-<img src="https://user-images.githubusercontent.com/79646/36270991-42e8d440-124b-11e8-9bd6-17cfc02b77fa.png" alt="SchedEx" width="300"/>
+# Fledex Scheduler
+[![Hex.pm](https://img.shields.io/hexpm/l/fledex_scheduler "License")](https://github.com/a-maze-d/fledex_scheduler/blob/main/LICENSES/MIT.txt)
+[![Hex version](https://img.shields.io/hexpm/v/fledex_scheduler.svg?color=0000ff "Hex version")](https://hex.pm/packages/fledex_scheduler)
+[![API docs](https://img.shields.io/hexpm/v/fledex_scheduler.svg?label=hexdocs&color=0000ff "API docs")](https://hexdocs.pm/fledex_scheduler)
+[![ElixirCI](https://github.com/a-maze-d/fledex_scheduler/actions/workflows/elixir.yml/badge.svg "ElixirCI")](https://github.com/a-maze-d/fledex_scheduler/actions/workflows/elixir.yml)
+[![REUSE status](https://api.reuse.software/badge/github.com/a-maze-d/fledex_scheduler)](https://api.reuse.software/info/github.com/a-maze-d/fledex_schedulef)
+[![Coverage Status](https://coveralls.io/repos/github/a-maze-d/fledex_scheduler/badge.svg?branch=main)](https://coveralls.io/github/a-maze-d/fledex_scheduler?branch=main)
+[![Downloads](https://img.shields.io/hexpm/dt/fledex_scheduler.svg)](https://hex.pm/packages/fledex_scheduler)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/a-maze-d/fledex_scheduler/badge)](https://scorecard.dev/viewer/?uri=github.com/a-maze-d/fledex_scheduler)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/10474/badge)](https://www.bestpractices.dev/projects/10474)
+[![Last Updated](https://img.shields.io/github/last-commit/a-maze-d/fledex_scheduler.svg)](https://github.com/a-maze-d/fledex_scheduler/commits/main)
 
-[![Build Status](https://github.com/SchedEx/SchedEx/workflows/Elixir%20CI/badge.svg)](https://github.com/SchedEx/SchedEx/actions)
-[![Module Version](https://img.shields.io/hexpm/v/sched_ex.svg)](https://hex.pm/packages/sched_ex)
-[![Hex Docs](https://img.shields.io/badge/hex-docs-lightgreen.svg)](https://hexdocs.pm/sched_ex/)
-[![Total Download](https://img.shields.io/hexpm/dt/sched_ex.svg)](https://hex.pm/packages/sched_ex)
-[![License](https://img.shields.io/hexpm/l/sched_ex.svg)](https://github.com/SchedEx/SchedEx/blob/master/LICENSE.md)
-[![Last Updated](https://img.shields.io/github/last-commit/SchedEx/SchedEx.svg)](https://github.com/SchedEx/SchedEx/commits/master)
--->
 
 > [!IMPORTANT]
 > This repository is based on [SchedEx](https://github.com/SchedEx/SchedEx), but got 
