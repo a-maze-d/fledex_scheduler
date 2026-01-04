@@ -82,7 +82,7 @@ defmodule Fledex.Scheduler.Job do
 
   > #### Note {: .warning}
   > You can also specify `:utc` as timezone, because `Quantum` allowed it. It is preferred
-  > that you use `Etc/UTC` instead. The use of :utc` will be removed in a future version
+  > that you use `Etc/UTC` instead. The use of `:utc` will be removed in a future version
   """
   # coveralls-ignore-start
   @doc deprecation:
