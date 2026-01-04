@@ -1,3 +1,9 @@
+<!--
+Copyright 2026, Matthias Reik <fledex@reik.org>
+
+SPDX-License-Identifier: MIT
+-->
+
 # The MIT License
 
 Copyright (c) 2018 Mat Trudel on behalf of FunnelCloud Inc.
