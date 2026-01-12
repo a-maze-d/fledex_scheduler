@@ -69,7 +69,15 @@ defmodule Fledex.Scheduler do
   def run_in(func, {amount, unit} = delay, opts)
       when is_function(func) and is_integer(amount) and is_atom(unit) do
     {job_opts, opts} =
-      Keyword.split(opts, [:name, :repeat, :timezone, :overlap, :context, :run_once])
+      Keyword.split(opts, [
+        :name,
+        :nonexistent_time_strategy,
+        :repeat,
+        :timezone,
+        :overlap,
+        :context,
+        :run_once
+      ])
 
     job_opts = Keyword.put_new(job_opts, :repeat, 1)
 
@@ -81,7 +89,15 @@ defmodule Fledex.Scheduler do
   @spec run_in(Job.task(), pos_integer, keyword) :: GenServer.on_start()
   def run_in(func, delay, opts) when is_function(func) and is_integer(delay) do
     {job_opts, opts} =
-      Keyword.split(opts, [:name, :repeat, :timezone, :overlap, :context, :run_once])
+      Keyword.split(opts, [
+        :name,
+        :nonexistent_time_strategy,
+        :repeat,
+        :timezone,
+        :overlap,
+        :context,
+        :run_once
+      ])
 
     job_opts = Keyword.put_new(job_opts, :repeat, 1)
 
@@ -133,7 +149,15 @@ defmodule Fledex.Scheduler do
         opts = Keyword.put_new(opts, :repeat, true)
 
         {job_opts, opts} =
-          Keyword.split(opts, [:name, :repeat, :timezone, :overlap, :context, :run_once])
+          Keyword.split(opts, [
+            :name,
+            :nonexistent_time_strategy,
+            :repeat,
+            :timezone,
+            :overlap,
+            :context,
+            :run_once
+          ])
 
         job = Job.to_job(func, expression, job_opts)
 
@@ -150,13 +174,13 @@ defmodule Fledex.Scheduler do
   All the other `run_*` functions actually map to a job under the hood and therefore this function provides
   you with the most flexibility and power.
 
-  The additionl `opts` (keyword list) is for passing some extra settings that are mainly interesting for
+  The additionl `test_opts` (keyword list) is for passing some extra settings that are mainly interesting for
   testing.
   """
   @spec run_job(Job.t(), keyword) :: GenServer.on_start()
-  def run_job(job, opts \\ []) do
-    opts = Keyword.put_new(opts, :repeat, true)
-    Runner.run(job, opts, [])
+  def run_job(job, test_opts \\ []) do
+    test_opts = Keyword.put_new(test_opts, :repeat, true)
+    Runner.run(job, test_opts, [])
   end
 
   @doc """
@@ -167,9 +191,9 @@ defmodule Fledex.Scheduler do
   this the job will be identified.
   """
   @spec update_job(Job.t(), keyword) :: :ok
-  def update_job(%Job{name: name} = job, opts \\ []) do
-    opts = Keyword.put_new(opts, :repeat, true)
-    Runner.change_config(name, job, opts)
+  def update_job(%Job{name: name} = job, test_opts \\ []) do
+    test_opts = Keyword.put_new(test_opts, :repeat, true)
+    Runner.change_config(name, job, test_opts)
   end
 
   @doc """

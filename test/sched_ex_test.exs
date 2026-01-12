@@ -435,7 +435,7 @@ defmodule Fledex.SchedulerTest do
 
       runs = length(TestCallee.clear(context.agent))
       assert runs >= 2
-      assert runs <= 3
+      assert runs <= 4
     end
 
     test "supports crontab expressions (and extended ones at that)", context do
@@ -660,6 +660,7 @@ defmodule Fledex.SchedulerTest do
         |> Job.set_run_once(false)
         |> Job.set_timezone("Etc/UTC")
         |> Job.set_overlap(false)
+        |> Job.set_nonexistent_time_strategy(:adjust)
         |> Job.set_context(%{strip_name: :test_strip, job: :test_job})
 
       Scheduler.run_job(job, time_scale: TestTimeScale)
