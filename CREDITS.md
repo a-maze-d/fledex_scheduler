@@ -1,12 +1,22 @@
 <!--
-Copyright 2026, Matthias Reik <fledex@reik.org>
+Copyright 2023, Matthias Reik <fledex@reik.org>
 
 SPDX-License-Identifier: MIT
 -->
 
-# The MIT License
+# Contributors
+Url: [CONTRIBUTORS.md](CONTRIBUTORS.md)
+The first thank goes of course to all those that are contributing to this library, not only directly but also indirectly.
 
-Copyright (c) 2025 Matthias Reik <fledex@reik.org>
+# SchedEx
+Url: https://github.com/SchedEx/SchedEx
+Fledex_Scheduler is a for of SchedEx but with some modifications to play nicely with the
+[Fledex](https://github.com/a-maze-d/fledex/) library.
+
+## License: 
+[MIT License](https://github.com/SchedEx/SchedEx/blob/main/LICENSE.md) 
+
+The MIT License
 
 Copyright (c) 2018 Mat Trudel on behalf of FunnelCloud Inc.
 

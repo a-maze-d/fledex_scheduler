@@ -4,7 +4,7 @@
 defmodule Fledex.Scheduler.Job do
   @moduledoc """
   A job that determines the behaviour of the scheduler. Instead of calling
-  `Fledex.Scheduler.run_at/2`, `Fledex.Scheduler.run_in/2`, and `Fledex.Scheduler.run_every` you
+  `Fledex.Scheduler.run_at/3`, `Fledex.Scheduler.run_in/3`, and `Fledex.Scheduler.run_every/3` you
   can specify your job and use `Fledex.Scheduler.run_job/2`. the `job` gives you the most power,
   since the above mentioned functions all map to a job under the hood.
   """
@@ -87,7 +87,7 @@ defmodule Fledex.Scheduler.Job do
   # coveralls-ignore-start
   @doc deprecation:
          "Use `Etc/UTC` instead of `:utc` as timezone. This is for compatibility with Quantum only"
-  @spec set_timezone(__MODULE__.t(), :utc | String.t()) :: __MODULE__.t()
+  @spec set_timezone(t(), :utc | String.t()) :: t()
   def set_timezone(job, :utc), do: set_timezone(job, "Etc/UTC")
   # coveralls-ignore-stop
   def set_timezone(%Job{opts: opts} = job, timezone),
@@ -103,7 +103,7 @@ defmodule Fledex.Scheduler.Job do
 
   In general you want to avoid to run any job for that much time
   """
-  @spec set_overlap(__MODULE__.t(), boolean) :: __MODULE__.t()
+  @spec set_overlap(t(), boolean) :: t()
   def set_overlap(%Job{opts: opts} = job, overlap),
     do: %{job | opts: Keyword.put(opts, :overlap, overlap)}
 
@@ -111,7 +111,7 @@ defmodule Fledex.Scheduler.Job do
   This sets whether the job should repeat (or only run once), You can specify an amount, like 10
   and it means that the job will run 10x.
   """
-  @spec set_repeat(__MODULE__.t(), boolean | non_neg_integer()) :: __MODULE__.t()
+  @spec set_repeat(t(), boolean | non_neg_integer()) :: t()
   def set_repeat(%Job{opts: opts} = job, repeat),
     do: %{job | opts: Keyword.put(opts, :repeat, repeat)}
 
@@ -123,18 +123,31 @@ defmodule Fledex.Scheduler.Job do
   wait for that much time for the first initialization. By settin it the task will be run once during
   startup and will then follow it's schedule.
   """
-  @spec set_run_once(__MODULE__.t(), boolean) :: __MODULE__.t()
+  @spec set_run_once(t(), boolean) :: t()
   def set_run_once(%Job{opts: opts} = job, run_once),
     do: %{job | opts: Keyword.put(opts, :run_once, run_once)}
 
   @doc """
-  This sets teh context.
+  This sets on how to handle the case that a scheduling time does not exist.
+
+  During DST changes, it can happen that a time does not exist and there are two ways
+  on how to handle this:
+  * `:skp`: just ignore the missed scheduling and use the next one (this is the default)
+  * `:adjust`: adjust the schedule so that the schedule will happen at the same distance
+      from midnight independently on what the time actually is.
+  """
+  @spec set_nonexistent_time_strategy(t(), :skip | :adjust) :: t()
+  def set_nonexistent_time_strategy(%Job{opts: opts} = job, strategy),
+    do: %{job | opts: Keyword.put(opts, :nonexistent_time_strategy, strategy)}
+
+  @doc """
+  This sets the context.
 
   The context nothing that the scheduler will use, but it's something that the user can set to the job.
   It's an arbirary map. During task execution you can access the context and thereby use it in your
   processing.
   """
-  @spec set_context(__MODULE__.t(), map) :: __MODULE__.t()
+  @spec set_context(t(), map) :: t()
   def set_context(%Job{} = job, context), do: %{job | context: context}
 
   @doc """
@@ -143,7 +156,7 @@ defmodule Fledex.Scheduler.Job do
   Note: the job_opts should contain at least a `:name`, but any of the other
   properties the Job can take are accepted too.
   """
-  @spec to_job(Job.task(), Job.schedule() | pos_integer(), keyword) :: Job.t()
+  @spec to_job(task(), schedule() | pos_integer(), keyword) :: t()
   def to_job(func, spec, job_opts) do
     spec =
       case spec do
@@ -172,6 +185,7 @@ defmodule Fledex.Scheduler.Job do
         timezone: Keyword.get(job_opts, :timezone, "Etc/UTC"),
         overlap: Keyword.get(job_opts, :overlap, false),
         run_once: Keyword.get(job_opts, :run_once, false),
+        nonexistent_time_strategy: Keyword.get(job_opts, :nonexistent_time_strategy, :skip),
         repeat: repeat
       ],
       context: Keyword.get(job_opts, :context, %{})
