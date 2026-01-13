@@ -25,23 +25,23 @@ SPDX-License-Identifier: MIT
 > to keep the interface still the same, so you should be able to use it as a drop-in
 > replacement as well.
 >
-> If you don't see a need for the additional features (like definig jobs) you probably want
+> If you don't see a need for the additional features (like defining jobs) you probably want
 > to use SchedEx instead. This `README.md` only describes the parts that differ from `SchedEx`.
-> For the other parts, look at the `SchedEx` documentation.
+> For the other parts, look at the [`SchedEx` library documentation](https://hexdocs.pm/sched_ex/readme.html).
 >
 > Not everything has been adjusted to the new home and therefore you will still find a lot
 > of references to SchedEx (that might, or might not be accurate).
 
-`Fledex_Scheduler` is a simple yet deceptively powerful scheduling library for Elixir. Though it is almost trivially simple by design, it enables a number of very powerful use cases to be accomplished with very little effort.
+`Fledex_Scheduler` is a "simple yet deceptively powerful scheduling library for Elixir. Though it is almost trivially simple by design, it enables a number of very powerful use cases to be accomplished with very little effort".
 
 Fledex_Scheduler is a fork of SchedEx that is written by [Mat Trudel](http://github.com/mtrudel), and development is generously supported by the fine folks
-at [FunnelCloud](http://funnelcloud.io). It has been adapted to easily integrate into [FLedex](https://github.com/a-maze-d/fledex)
+at [FunnelCloud](http://funnelcloud.io). It has been adapted to easily integrate into [Fledex](https://github.com/a-maze-d/fledex)
 
 For usage details, please refer to the [documentation](https://hexdocs.pm/fledex_scheduler) and look at the original [`SchedEx` library documentation](https://hexdocs.pm/sched_ex/readme.html).
 
 ## Basic Usage
 
-In most contexts `Fledex.Scheduler.run_job/2` is the function most commonly used. You first define a `Fledex.Scheduler.Job` before you schedule the job. Thus, you code will look something like the following:
+`Fledex.Scheduler.run_job/2` is the function most commonly used. You first define a `Fledex.Scheduler.Job` before you schedule the job. Thus, your code will look something like the following:
 
 ```elixir
 alias Fledex.Scheduler
@@ -65,7 +65,7 @@ job =
 {:ok, pid} = Scheduler.run_job(job)
 ```
 
-If more control over the schedule process is required (for example by integrating it into a supervision tree) it's also possible to use the Runner (`Fledex.Scheduler.Runner`) directly.
+If more control over the scheduling process is required (for example by integrating it into a supervision tree) it's also possible to use the Runner (`Fledex.Scheduler.Runner`) directly.
 The `Fledex.Scheduler.run_job/2` maps directly to the `Fledex.Scheduler.Runner.run/3` or `Fledex.Scheduler.Runner.start_link/3` with additional server options.
 
 ## Differences vs SchedEx
@@ -78,7 +78,7 @@ The scheduling can happen in various forms:
 * delay based with a unit (as a tuple [`{unit, amount}`](c:Fledex.Scheduler.Job.unit/0))
 * crontab based, either as a `Crontab.CronExpression` or as a string (that will be parsed)
 
-In addition a clearer definition was introduced between the different type of options (`job_opts`, `test_opts`, and `server_opts`), 100% test, `@spec` and `@doc` coverage, and
+In addition a clearer definition was introduced between the different type of options (`job_opts`, `test_opts`, and `server_opts`), 100% test, `@spec` and `@doc` coverage has been added, and
 a lot of automatisms in the CI pipeline.
 
 ## Copyright and License
