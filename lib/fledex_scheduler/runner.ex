@@ -14,7 +14,7 @@ defmodule Fledex.Scheduler.Runner do
   alias Fledex.Scheduler.Job
   alias Fledex.Scheduler.Stats
 
-  @type executor_opts :: keyword
+  @type test_opts :: keyword
   @type t :: %{
           job: Job.t() | nil,
           timer_ref: reference() | nil,
@@ -22,7 +22,7 @@ defmodule Fledex.Scheduler.Runner do
           scheduled_at: DateTime.t() | nil,
           delay: pos_integer() | nil,
           stats: Stats.t(),
-          opts: keyword
+          test_opts: test_opts()
         }
 
   @doc """
@@ -34,7 +34,7 @@ defmodule Fledex.Scheduler.Runner do
   Main point of entry into this module. Starts and returns a process which will
   run the given function per the specified `job` definition
   """
-  @spec start_link(Job.t(), keyword, keyword) :: GenServer.on_start()
+  @spec start_link(Job.t(), test_opts(), keyword) :: GenServer.on_start()
   def start_link(%Job{name: name} = job, test_opts \\ [], server_opts \\ []) do
     server_opts = Keyword.put_new(server_opts, :name, name)
     GenServer.start_link(__MODULE__, {job, test_opts}, server_opts)
@@ -47,15 +47,9 @@ defmodule Fledex.Scheduler.Runner do
   allowed to change. The arguments are otherwise the same as for `run/2`.
   If there is nothing to schedule (or an error happens, the process will terminate)
   """
-  # @spec update(Job.t(), executor_opts()) :: :ok
-  # def update(%Job{name: name} = job, opts) do
-  #   GenServer.call(name, {:change_config, job, opts})
-  # end
-  #
-  # temporarily
-  @spec change_config(GenServer.server(), Job.t(), keyword()) :: :ok
-  def change_config(server, %Job{} = job, opts) do
-    GenServer.call(server, {:change_config, job, opts})
+  @spec change_config(GenServer.server(), Job.t(), test_opts()) :: :ok
+  def change_config(server, %Job{} = job, test_opts) do
+    GenServer.call(server, {:change_config, job, test_opts})
   end
 
   @doc """
@@ -66,9 +60,6 @@ defmodule Fledex.Scheduler.Runner do
   scheduled date/time`, and the `delay` (in milliseconds) until the next run.
   """
   @spec next_schedule(GenServer.server()) :: {DateTime.t(), DateTime.t(), pos_integer}
-  # def next_schedule(%Job{name: name} = _job) do
-  #   GenServer.call(name, :next_schedule)
-  # end
   def next_schedule(server) do
     GenServer.call(server, :next_schedule)
   end
@@ -93,11 +84,11 @@ defmodule Fledex.Scheduler.Runner do
   # MARK: Server API
   @doc false
   @impl GenServer
-  @spec init({Job.t(), keyword}) :: {:ok, t(), {:continue, {}}}
-  def init({%Job{} = job, opts}) do
+  @spec init({Job.t(), test_opts()}) :: {:ok, t(), {:continue, {}}}
+  def init({%Job{} = job, test_opts}) do
     Process.flag(:trap_exit, true)
 
-    start_time = Keyword.get(opts, :start_time, DateTime.utc_now())
+    start_time = Keyword.get(test_opts, :start_time, DateTime.utc_now())
 
     {
       :ok,
@@ -108,7 +99,7 @@ defmodule Fledex.Scheduler.Runner do
         scheduled_at: start_time,
         delay: nil,
         stats: %Stats{},
-        opts: opts
+        test_opts: test_opts
       },
       {:continue, {}}
     }
@@ -143,7 +134,7 @@ defmodule Fledex.Scheduler.Runner do
   end
 
   def handle_call(
-        {:change_config, %Job{} = job, opts},
+        {:change_config, %Job{} = job, test_opts},
         _from,
         %{
           timer_ref: timer_ref
@@ -151,7 +142,7 @@ defmodule Fledex.Scheduler.Runner do
       ) do
     _ignore = Process.cancel_timer(timer_ref)
 
-    start_time = Keyword.get(opts, :start_time, DateTime.utc_now())
+    start_time = Keyword.get(test_opts, :start_time, DateTime.utc_now())
 
     state = %{
       state
@@ -160,7 +151,7 @@ defmodule Fledex.Scheduler.Runner do
         scheduled_at: start_time,
         quantized_scheduled_at: start_time,
         delay: nil,
-        opts: opts
+        test_opts: test_opts
     }
 
     result =
@@ -201,10 +192,10 @@ defmodule Fledex.Scheduler.Runner do
     :ok
   end
 
-  @spec schedule_next(DateTime.t(), Job.t(), keyword) ::
+  @spec schedule_next(DateTime.t(), Job.t(), test_opts()) ::
           {DateTime.t(), DateTime.t(), pos_integer(), reference()} | :error
-  defp schedule_next(%DateTime{} = from, job, opts) do
-    case get_next_and_delay(from, job, opts) do
+  defp schedule_next(%DateTime{} = from, job, test_opts) do
+    case get_next_and_delay(from, job, test_opts) do
       :error ->
         :error
 
@@ -221,15 +212,15 @@ defmodule Fledex.Scheduler.Runner do
     end
   end
 
-  @spec get_next_and_delay(DateTime.t(), Job.t(), keyword) ::
+  @spec get_next_and_delay(DateTime.t(), Job.t(), test_opts()) ::
           {DateTime.t(), pos_integer()} | :error
-  defp get_next_and_delay(from, %Job{schedule: milliseconds} = job, opts)
+  defp get_next_and_delay(from, %Job{schedule: milliseconds} = job, test_opts)
        when is_integer(milliseconds) do
-    get_next_and_delay(from, %{job | schedule: {milliseconds, :milliseconds}}, opts)
+    get_next_and_delay(from, %{job | schedule: {milliseconds, :milliseconds}}, test_opts)
   end
 
-  defp get_next_and_delay(from, %Job{schedule: {value, unit}} = _job, opts) do
-    time_scale = Keyword.get(opts, :time_scale, IdentityTimeScale)
+  defp get_next_and_delay(from, %Job{schedule: {value, unit}} = _job, test_opts) do
+    time_scale = Keyword.get(test_opts, :time_scale, IdentityTimeScale)
 
     delay = to_millis(value, unit)
     delay = round(delay / time_scale.speedup())
@@ -246,9 +237,9 @@ defmodule Fledex.Scheduler.Runner do
            schedule: crontab,
            opts: job_opts
          } = job,
-         opts
+         test_opts
        ) do
-    time_scale = Keyword.get(opts, :time_scale, IdentityTimeScale)
+    time_scale = Keyword.get(test_opts, :time_scale, IdentityTimeScale)
     timezone = Keyword.get(job_opts, :timezone, "Etc/UTC")
     from = time_scale.now(timezone)
 
@@ -256,7 +247,7 @@ defmodule Fledex.Scheduler.Runner do
 
     case Crontab.Scheduler.get_next_run_date(crontab, naive_from) do
       {:ok, naive_next} ->
-        next = convert_naive_to_timezone(naive_next, job, timezone, opts)
+        next = convert_naive_to_timezone(naive_next, job, timezone, test_opts)
         delay = max(DateTime.diff(next, from, :millisecond), 0)
         delay = round(delay / time_scale.speedup())
         {next, delay}
@@ -286,14 +277,14 @@ defmodule Fledex.Scheduler.Runner do
   defp to_millis(value, :weeks), do: to_millis(value, :w)
   defp to_millis(value, :w), do: to_millis(value, :d) * 7
 
-  defp convert_naive_to_timezone(naive_next, job, timezone, opts) do
+  defp convert_naive_to_timezone(naive_next, job, timezone, test_opts) do
     next = DateTime.from_naive(naive_next, timezone)
 
     case next do
       {:gap, _just_before, just_after} ->
-        case Keyword.get(opts, :nonexistent_time_strategy, :skip) do
+        case Keyword.get(job.opts, :nonexistent_time_strategy, :skip) do
           :skip ->
-            {next, _delay} = get_next_and_delay(just_after, job, opts)
+            {next, _delay} = get_next_and_delay(just_after, job, test_opts)
             next
 
           :adjust ->
@@ -343,7 +334,7 @@ defmodule Fledex.Scheduler.Runner do
   defp prepare_for_next_iteration(
          %{
            job: job,
-           opts: opts,
+           test_opts: test_opts,
            scheduled_at: start_time
          } = state
        ) do
@@ -362,7 +353,7 @@ defmodule Fledex.Scheduler.Runner do
           }
       }
 
-      case schedule_next(start_time, job, opts) do
+      case schedule_next(start_time, job, test_opts) do
         :error ->
           # IO.puts("stopping...")
           # adjusting to do the same as the normal operation (see handle_info)
@@ -381,7 +372,7 @@ defmodule Fledex.Scheduler.Runner do
                quantized_scheduled_at: quantized_next_time,
                scheduled_at: next_time,
                delay: next_delay,
-               opts: opts
+               test_opts: test_opts
            }}
       end
     else
