@@ -4,7 +4,7 @@ Copyright 2025-2026, Matthias Reik <fledex@reik.org>
 SPDX-License-Identifier: MIT
 -->
 
-# Changelog for Fledex v0.2,9-dev
+# Changelog for Fledex v0.2.0-dev
 
 * Consistently setting MIT as license (removing all Apache-2.0)
 * Creating github actions
@@ -13,6 +13,7 @@ SPDX-License-Identifier: MIT
 * Adding documentation
 * Adding type specs (and correcting some)
 * Ensuring 100% code coverage
+* Updating README.md
 
 # Previous versions
 The Changelog of previous versions can be found [here](https://github.com/a-maze-d/fledex_scheduler/releases) 
