@@ -166,10 +166,6 @@ defmodule Fledex.Scheduler.Runner do
     {:noreply, state}
   end
 
-  def handle_info(_ignore, state) do
-    {:noreply, state}
-  end
-
   @spec run_func(DateTime.t(), Job.task()) :: :ok
   defp run_func(this_time, func) do
     if is_function(func, 1) do

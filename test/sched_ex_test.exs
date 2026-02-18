@@ -831,9 +831,6 @@ defmodule Fledex.SchedulerTest do
 
   describe "telemetry" do
     test "receive telemetry events on the running job" do
-      # remove the warning about using an anonymous function by increasing the log level
-      Logger.configure(level: :warning)
-
       :ok =
         :telemetry.attach_many(
           :test_telemetry_handler,
@@ -842,7 +839,7 @@ defmodule Fledex.SchedulerTest do
             [Fledex.Scheduler.Runner, :run_func, :stop],
             [Fledex.Scheduler.Runner, :run_func, :execute]
           ],
-          &test_handler/4,
+          &Fledex.SchedulerTest.test_handler/4,
           %{pid: self()}
         )
 
