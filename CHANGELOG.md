@@ -11,6 +11,7 @@ SPDX-License-Identifier: MIT
 * Setting up ex_check pipline (with sobelow, doctor, coveralls, xref, reuse)
 * ensuring everything is green
 * Adding documentation
+* Replacing the `Stats` with `:telemetry`
 * Adding type specs (and correcting some)
 * Ensuring 100% code coverage
 * Updating README.md

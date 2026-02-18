@@ -12,7 +12,6 @@ defmodule Fledex.Scheduler.Runner do
 
   alias Fledex.Scheduler.IdentityTimeScale
   alias Fledex.Scheduler.Job
-  alias Fledex.Scheduler.Stats
 
   @type test_opts :: keyword
   @type t :: %{
@@ -21,7 +20,6 @@ defmodule Fledex.Scheduler.Runner do
           quantized_scheduled_at: DateTime.t() | nil,
           scheduled_at: DateTime.t() | nil,
           delay: pos_integer() | nil,
-          stats: Stats.t(),
           test_opts: test_opts()
         }
 
@@ -65,14 +63,6 @@ defmodule Fledex.Scheduler.Runner do
   end
 
   @doc """
-  Returns stats for the given process.
-  """
-  @spec stats(GenServer.server()) :: Stats.t()
-  def stats(server) do
-    GenServer.call(server, :stats)
-  end
-
-  @doc """
   Cancels future invocation of the given process. If it has already been invoked, does nothing.
   """
   @spec cancel(GenServer.server()) :: :ok
@@ -98,7 +88,6 @@ defmodule Fledex.Scheduler.Runner do
         quantized_scheduled_at: start_time,
         scheduled_at: start_time,
         delay: nil,
-        stats: %Stats{},
         test_opts: test_opts
       },
       {:continue, {}}
@@ -127,10 +116,6 @@ defmodule Fledex.Scheduler.Runner do
         } = state
       ) do
     {:reply, {scheduled_at, quantized_next_time, delay}, state}
-  end
-
-  def handle_call(:stats, _from, %{stats: stats} = state) do
-    {:reply, stats, state}
   end
 
   def handle_call(
@@ -178,6 +163,10 @@ defmodule Fledex.Scheduler.Runner do
   end
 
   def handle_info({:EXIT, _pid, :normal}, state) do
+    {:noreply, state}
+  end
+
+  def handle_info(_ignore, state) do
     {:noreply, state}
   end
 
@@ -318,17 +307,33 @@ defmodule Fledex.Scheduler.Runner do
          %{
            job: job,
            scheduled_at: this_time,
-           quantized_scheduled_at: quantized_this_time,
-           stats: stats
+           quantized_scheduled_at: quantized_this_time
          } = state,
          true
        ) do
-    start_time = DateTime.utc_now()
-    run_func(this_time, job.func)
-    end_time = DateTime.utc_now()
+    :telemetry.span(
+      [Fledex.Scheduler.Runner, :run_func],
+      %{
+        job_name: job.name,
+        schedulerd_at: this_time,
+        quantized_scheduled_at: quantized_this_time
+      },
+      fn ->
+        run_func(this_time, job.func)
 
-    stats = Stats.update(stats, this_time, quantized_this_time, start_time, end_time)
-    %{state | stats: stats}
+        {
+          :ok,
+          %{
+            job_name: job.name,
+            schedulerd_at: this_time,
+            quantized_scheduled_at: quantized_this_time,
+            metadata: "done"
+          }
+        }
+      end
+    )
+
+    state
   end
 
   defp prepare_for_next_iteration(
@@ -363,8 +368,6 @@ defmodule Fledex.Scheduler.Runner do
         # :ignore
 
         {next_time, quantized_next_time, next_delay, timer_ref} ->
-          # stats = %Stats{}
-
           {:noreply,
            %{
              state

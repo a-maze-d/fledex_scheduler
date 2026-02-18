@@ -37,6 +37,9 @@ defmodule Fledex.Scheduler.Mixfile do
       {:crontab, "~> 1.2.0"},
       {:tzdata, "~> 1.1", optional: true},
 
+      # observability
+      {:telemetry, "~> 1.2"},
+
       # documentation
       {:ex_doc, "~>0.38", only: :dev, runtime: false},
 
