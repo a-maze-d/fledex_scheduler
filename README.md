@@ -69,17 +69,20 @@ If more control over the scheduling process is required (for example by integrat
 The `Fledex.Scheduler.run_job/2` maps directly to the `Fledex.Scheduler.Runner.run/3` or `Fledex.Scheduler.Runner.start_link/3` with additional server options.
 
 ## Differences vs SchedEx
-`SchedEx` was the base for this library and the core implementation hasn't changed. A [`Job`](`Fledex.Scheduler.Job`)
+`SchedEx` was the base for this library and the core implementation hasn't changed. Here the biggest changes:
+
+* A [`Job`](`Fledex.Scheduler.Job`)
 definition has been added. This `Job` is not only used in the [`run_job`](`Fledex.Scheduler.run_job/2`) but also under the hood in all the other interface functions, i.e. [`run_every`](`Fledex.Scheduler.run_every/3`), [`run_at`](`Fledex.Scheduler.run_at/3`), and [`run_in`](`Fledex.Scheduler.run_in/3`). An attempt was
 made to keep the same semantics in the interface so it can act as a drop-in replacement for SchedEx. Still, no guarantee can be given that this is true in all cases.
-
-The scheduling can happen in various forms:
-* delay based (in milliseconds)
-* delay based with a unit (as a tuple [`{unit, amount}`](c:Fledex.Scheduler.Job.unit/0))
-* crontab based, either as a `Crontab.CronExpression` or as a string (that will be parsed)
-
-In addition a clearer definition was introduced between the different type of options (`job_opts`, `test_opts`, and `server_opts`), 100% test, `@spec` and `@doc` coverage has been added, and
-a lot of automatisms in the CI pipeline.
+* The scheduling has been extended and can now happen in the following forms:
+  * delay based (in milliseconds)
+  * delay based with a unit (as a tuple [`{unit, amount}`](c:Fledex.Scheduler.Job.unit/0)) (NEW)
+  * crontab based, either as a `Crontab.CronExpression` or as a string (that will be parsed)
+* The dependency on `TimeX` has been removed and we rely purely on the functions provided by core Elixir.
+* The `Stats` have been replaced with `:telemetry`. Thus, if you want to extract some stats, you should attach to the span events `[Fledex.Scheduler.Runner, :run_func]`
+* In addition a clearer definition was introduced between the different type of options (`job_opts`, `test_opts`, and `server_opts`). 
+* 100% test, `@spec`, and `@doc` coverage has been added.
+* A lot of automatisms have been added in the CI pipeline.
 
 ## Copyright and License
 Copyright (c) 2025-2026, Matthias Reik <fledex@reik.org>
