@@ -11,8 +11,6 @@ defmodule Fledex.SchedulerTest do
   alias Fledex.Scheduler
   alias Fledex.Scheduler.Job
   alias Fledex.Scheduler.Runner
-  alias Fledex.Scheduler.Stats
-  alias Fledex.Scheduler.Stats.Value
 
   doctest Fledex.Scheduler
 
@@ -826,41 +824,32 @@ defmodule Fledex.SchedulerTest do
     end
   end
 
-  describe "stats" do
-    test "returns stats on the running job", context do
-      {:ok, pid} =
-        Scheduler.run_in(TestCallee, :append, [context.agent, 1], @sleep_duration, repeat: true)
+  def test_handler(event_name, _event_measurement, _event_metadata, %{pid: pid} = _handler_config) do
+    [_module, _func, state] = event_name
+    send(pid, state)
+  end
 
-      Process.sleep(@sleep_duration_plus_margin)
+  describe "telemetry" do
+    test "receive telemetry events on the running job" do
+      :ok =
+        :telemetry.attach_many(
+          :test_telemetry_handler,
+          [
+            [Fledex.Scheduler.Runner, :run_func, :start],
+            [Fledex.Scheduler.Runner, :run_func, :stop],
+            [Fledex.Scheduler.Runner, :run_func, :execute]
+          ],
+          &Fledex.SchedulerTest.test_handler/4,
+          %{pid: self()}
+        )
 
-      %Stats{
-        scheduling_delay: %Value{
-          min: sched_min,
-          max: sched_max,
-          avg: sched_avg,
-          count: sched_count
-        },
-        execution_time: %Value{
-          min: exec_min,
-          max: exec_max,
-          avg: exec_avg,
-          count: exec_count
-        }
-      } = Scheduler.stats(pid)
+      {:ok, _pid} =
+        Scheduler.run_in(fn -> :ok end, @sleep_duration, repeat: false)
 
-      assert sched_count == 1
-      # Assume that scheduling delay is 1..3000 usec
-      assert sched_avg > 1.0
-      assert sched_avg < 3000.0
-      assert sched_min == sched_avg
-      assert sched_max == sched_avg
+      assert_receive(:start, 2_000)
+      assert_receive(:stop, 100)
 
-      assert exec_count == 1
-      # Assume that execution time is 1..200 usec
-      assert exec_avg > 1.0
-      assert exec_avg < 200.0
-      assert exec_min == exec_avg
-      assert exec_max == exec_avg
+      :telemetry.detach(:test_telemetry_handler)
     end
   end
 end

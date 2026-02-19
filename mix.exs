@@ -6,7 +6,7 @@ defmodule Fledex.Scheduler.Mixfile do
   use Mix.Project
 
   @source_url "https://github.com/a_maze_d/fledex_scheduler"
-  @version "0.2.0"
+  @version "0.3.0-dev"
 
   def project do
     [
@@ -36,6 +36,9 @@ defmodule Fledex.Scheduler.Mixfile do
     [
       {:crontab, "~> 1.2.0"},
       {:tzdata, "~> 1.1", optional: true},
+
+      # observability
+      {:telemetry, "~> 1.2"},
 
       # documentation
       {:ex_doc, "~>0.38", only: :dev, runtime: false},
