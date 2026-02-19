@@ -15,7 +15,6 @@ defmodule Fledex.Scheduler do
   alias Crontab.CronExpression.Parser
   alias Fledex.Scheduler.Job
   alias Fledex.Scheduler.Runner
-  alias Fledex.Scheduler.Stats
 
   @doc """
   Runs the given module, function and argument at the given time
@@ -202,21 +201,6 @@ defmodule Fledex.Scheduler do
   @spec cancel(GenServer.server()) :: :ok
   def cancel(server) do
     Runner.cancel(server)
-  end
-
-  @doc """
-  Returns stats on the given job. Stats are returned for:
-  * `scheduling_delay`: The delay between when the job was scheduled to execute, and the time
-  it actually was executed. Based on the quantized scheduled start, and so does not include quantization error. Value specified in microseconds.
-  * `quantization_error`: Erlang is only capable of scheduling future calls with millisecond precision, so there is some
-  inevitable precision lost between when the job would be scheduled in a perfect world, and how well Erlang is able to
-  schedule the job (ie: to the closest millisecond). This error value captures that difference. Value specified in microseconds.
-  * `execution_time`: The amount of time the job spent executing. Value specified in microseconds.
-
-  """
-  @spec stats(GenServer.server()) :: Stats.t()
-  def stats(name) do
-    Runner.stats(name)
   end
 
   defp mfa_to_fn(m, f, args) do
