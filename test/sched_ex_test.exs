@@ -260,6 +260,22 @@ defmodule Fledex.SchedulerTest do
       Scheduler.run_in(
         TestCallee,
         :append,
+        [context.agent, :fledex_scheduler_scheduled_time],
+        @sleep_duration,
+        start_time: now
+      )
+
+      Process.sleep(2 * @sleep_duration)
+      assert TestCallee.clear(context.agent) == [expected_time]
+    end
+
+    test "optionally passes the runtime into the m,f,a (compatibility version)", context do
+      now = DateTime.utc_now()
+      expected_time = DateTime.shift(now, microsecond: {@sleep_duration * 1000, 6})
+
+      Scheduler.run_in(
+        TestCallee,
+        :append,
         [context.agent, :sched_ex_scheduled_time],
         @sleep_duration,
         start_time: now

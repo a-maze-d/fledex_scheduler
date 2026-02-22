@@ -4,8 +4,10 @@ Copyright 2025-2026, Matthias Reik <fledex@reik.org>
 SPDX-License-Identifier: MIT
 -->
 
-# Changelog for Fledex v0.3.0-dev
+# Changelog for Fledex v0.3.0
 * Replacing the `Stats` with `:telemetry`
+* Changed the implementation of `run_at/5` so we have the same behavior as for `run_in/5`. We convert the `m, f, a` to a an anonymous function.
+* Added a `:fledex_scheduler_scheduled_time` parameter that can be used in `m,f,a`s (still keeping the `:sched_ex_scheduled_time` option for BC)
 
 # Changelog for Fledex v0.2.0
 
