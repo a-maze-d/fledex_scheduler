@@ -22,7 +22,7 @@ defmodule Fledex.Scheduler do
   @spec run_at(module(), atom(), list(), DateTime.t(), keyword) :: GenServer.on_start()
   def run_at(m, f, a, %DateTime{} = time, opts \\ [])
       when is_atom(m) and is_atom(f) and is_list(a) do
-    run_at(fn -> apply(m, f, a) end, time, opts)
+    run_at(mfa_to_fn(m, f, a), time, opts)
   end
 
   @doc """
@@ -49,6 +49,12 @@ defmodule Fledex.Scheduler do
   (often used for speeding up test runs)
   * `name`: To attach a name to the process. Useful for adding a name to Registry
   to lookup later. ie. {:via, Registry, {YourRegistryName, "scheduled-task-1"}}
+
+  > #### Note: {: .note}
+  > The `m, f, a` being called can contain arguments of `:fledex_scheduler_scheduled_time`.
+  > (or for legacy `:sched_ex_scheduled_time`). Those will be replaced with the actual time
+  > when the job was supposed to be run (which should be close the time it actually
+  . got run)
   """
   @spec run_in(module, atom(), list(), pos_integer, keyword) :: GenServer.on_start()
   def run_in(m, f, a, delay, opts \\ []) when is_atom(m) and is_atom(f) and is_list(a) do
@@ -203,11 +209,18 @@ defmodule Fledex.Scheduler do
     Runner.cancel(server)
   end
 
+  # This function converts an `m, f, a` to an anoymous function
+  # that takes one argument (`time`). When the scheduler runs
+  # this function it will get the time of scheduling and we will
+  # substitute the argument `:fledex_scheduler_scheduled_time`
+  # with passed in value before calling the actual `m, f, a`
   defp mfa_to_fn(m, f, args) do
     fn time ->
       substituted_args =
         args
         |> Enum.map(fn
+          :fledex_scheduler_scheduled_time -> time
+          # for backwards compatibility with SchedEx
           :sched_ex_scheduled_time -> time
           arg -> arg
         end)

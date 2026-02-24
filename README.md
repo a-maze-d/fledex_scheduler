@@ -39,6 +39,19 @@ at [FunnelCloud](http://funnelcloud.io). It has been adapted to easily integrate
 
 For usage details, please refer to the [documentation](https://hexdocs.pm/fledex_scheduler) and look at the original [`SchedEx` library documentation](https://hexdocs.pm/sched_ex/readme.html).
 
+## Installation
+
+The library is [available in Hex](https://hex.pm/packages/fledex_scheduler), the package 
+can be installed by adding `:fledex_scheduler` to your list of dependencies in `mix.exs`:
+
+```elixir
+def deps do
+  [
+    {:fledex_scheduler, "~>0.3"}
+  ]
+end
+```
+
 ## Basic Usage
 
 `Fledex.Scheduler.run_job/2` is the function most commonly used. You first define a `Fledex.Scheduler.Job` before you schedule the job. Thus, your code will look something like the following:
@@ -79,7 +92,7 @@ made to keep the same semantics in the interface so it can act as a drop-in repl
   * delay based with a unit (as a tuple [`{unit, amount}`](c:Fledex.Scheduler.Job.unit/0)) (NEW)
   * crontab based, either as a `Crontab.CronExpression` or as a string (that will be parsed)
 * The dependency on `TimeX` has been removed and we rely purely on the functions provided by core Elixir.
-* The `Stats` have been replaced with `:telemetry`. Thus, if you want to extract some stats, you should attach to the span events `[Fledex.Scheduler.Runner, :run_func]`
+* The `Stats` have been replaced with `:telemetry`. Thus, if you want to extract some stats, you should attach to the span events `[Fledex.Scheduler.Runner, :run_func]`. The corresponding stats functions have been removed.
 * In addition a clearer definition was introduced between the different type of options (`job_opts`, `test_opts`, and `server_opts`). 
 * 100% test, `@spec`, and `@doc` coverage has been added.
 * A lot of automatisms have been added in the CI pipeline.
