@@ -3,6 +3,7 @@ Copyright 2025-2026, Matthias Reik <fledex@reik.org>
 
 SPDX-License-Identifier: MIT
 -->
+# Changelog for Fledex v0.4.0-dev
 
 # Changelog for Fledex v0.3.0
 * Replacing the `Stats` with `:telemetry`
