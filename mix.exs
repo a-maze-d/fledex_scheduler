@@ -6,7 +6,7 @@ defmodule Fledex.Scheduler.Mixfile do
   use Mix.Project
 
   @source_url "https://github.com/a_maze_d/fledex_scheduler"
-  @version "0.3.0"
+  @version "0.4.0-dev"
 
   def project do
     [
