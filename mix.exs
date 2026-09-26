@@ -6,7 +6,7 @@ defmodule Fledex.Scheduler.Mixfile do
   use Mix.Project
 
   @source_url "https://github.com/a_maze_d/fledex_scheduler"
-  @version "0.4.0-dev"
+  @version "0.4.0"
 
   def project do
     [
@@ -28,14 +28,14 @@ defmodule Fledex.Scheduler.Mixfile do
 
   def application do
     [
-      extra_applications: [:crontab, :logger, :tzdata]
+      # extra_applications: [:crontab, :logger, :tzdata]
     ]
   end
 
   defp deps do
     [
       {:crontab, "~> 1.2.0"},
-      {:tzdata, "~> 1.1", optional: true},
+      {:tzdata, "~> 1.2", optional: true},
 
       # observability
       {:telemetry, "~> 1.2"},
@@ -50,10 +50,12 @@ defmodule Fledex.Scheduler.Mixfile do
       {:excoveralls, "~> 0.18", only: :test},
       {:ex_check, "~> 0.16.0", only: [:dev, :test], runtime: false},
       {:mix_audit, "~> 2.1", only: [:dev, :test], runtime: false},
-      {:doctor, "~> 0.22.0", only: [:dev, :test], runtime: false},
-      {:sobelow, "~> 0.14", only: [:dev, :test], runtime: false, warn_if_outdated: true},
+      {:doctor, "~> 0.23.0", only: [:dev, :test], runtime: false},
+      {:sobelow, "~> 0.15", only: [:dev, :test], runtime: false, warn_if_outdated: true},
       # required by excoveralls
-      {:castore, "~> 1.0", only: :test}
+      {:castore, "~> 1.0", only: :test},
+      # this is to ensure we get the correct version without any vulnerabilities
+      {:hackney, "~> 4.0"}
     ]
   end
 
@@ -88,10 +90,11 @@ defmodule Fledex.Scheduler.Mixfile do
     [
       description:
         "Fledex_Scheduler is a fork of SchedEx, a simple yet deceptively powerful scheduling library for Elixir, adjusted for the use with Fledex",
-      files: ["lib", "test", "config", "mix.exs", "README*", "LICENSE*"],
+      # files: ["lib", "test", "config", "mix.exs", "README*", "LICENSE*"],
       maintainers: ["Matthias Reik"],
       licenses: ["MIT"],
-      links: %{"GitHub" => @source_url}
+      links: %{"GitHub" => @source_url},
+      exclude_patterns: [".formatter", "priv", "priv/"]
     ]
   end
 
