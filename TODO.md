@@ -8,4 +8,7 @@ Copyright 2025-2026, Matthias Reik <fledex@reik.org>
 The following list contains thins I want to do
 - [x] Replace the embedded stats with `:telemetry` Thereby the stats can be handled outside of this module (v0.3)
 - [x] Why do we handle `{m, f, a}`s differently for `run_at` and `run_in`? (v0.3)
-- [ ] Better test the various options like`:run_once` to ensure they work properly (v0.4)
+- [x] Remove tzdata as an extra application (v0.4)
+- [x] Remove crontab as an extra application (v0.4)
+- [x] Upgarding all libraries (v0.4)
+- [ ] Better test the various options like`:run_once` to ensure they work properly (v0.5)
